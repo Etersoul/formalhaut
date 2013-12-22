@@ -1,4 +1,5 @@
 /** Core Formalhaut File **/
+var $F = ($F) ? $F : null;
 
 (function ($) {
     "use strict";
@@ -9,7 +10,8 @@
         if (!$ && $.fn.jQuery.split('.')[0] != '1' && parseInt($.fn.jQuery.split('.')[1]) < 10) {
             console.error('Formalhaut JS engine needs jQuery 1.10');
         }
-        if ($F) {
+        
+        if ($F !== null) {
             return;
         } else {
             $F = initF();
@@ -20,7 +22,7 @@
         var config = {};
 
         var build = function () {
-            this.write =
+        
         };
 
         build.ajax = function (opt) {
@@ -71,7 +73,18 @@
 
         build.hook = function (func) {
 
-        }
+        };
+        
+        build.help = function () {
+            var arr = [];
+            for (var i in build) {
+                if (typeof build[i] === 'function') {
+                    arr.push(i + '()');
+                }
+            }
+            
+            console.info(arr.join(', '));
+        };
 
         return build;
     }
@@ -80,9 +93,10 @@
         location.href = message;
     }
 
-})(jQuery);
-/** Configuration Processing for Formalhaut **/
+})(jQuery);/** Configuration Processing for Formalhaut **/
 (function ($, $F) {
+    "use strict";
+    
     var localConfig = {};
     $F.loadConfig = function (config) {
         localConfig = config;
@@ -91,11 +105,16 @@
     $F.getConfig = function (key) {
         return localConfig[key];
     };
+    
+    /** Shorthand of $F.ajax with URL that have been prepended with serviceUri **/
+    $F.service = function (data) {
+        data.url = localConfig.serviceUri + data.url;
+        return $F.ajax(data);
+    };
 })(jQuery, $F);
 /** Navigation for Formalhaut **/
-
 (function ($, $F) {
-
+    "use strict";
     var nav = {};
 
     nav.subView = null;

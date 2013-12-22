@@ -1,7 +1,6 @@
 /** Navigation for Formalhaut **/
-
 (function ($, $F) {
-
+    "use strict";
     var nav = {};
 
     nav.subView = null;
