@@ -1,3 +1,5 @@
+/** Core Formalhaut File **/
+
 (function ($) {
     "use strict";
 
@@ -78,7 +80,21 @@
         location.href = message;
     }
 
-})(jQuery);(function ($, $F) {
+})(jQuery);
+/** Configuration Processing for Formalhaut **/
+(function ($, $F) {
+    var localConfig = {};
+    $F.loadConfig = function (config) {
+        localConfig = config;
+    };
+    
+    $F.getConfig = function (key) {
+        return localConfig[key];
+    };
+})(jQuery, $F);
+/** Navigation for Formalhaut **/
+
+(function ($, $F) {
 
     var nav = {};
 

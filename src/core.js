@@ -1,3 +1,5 @@
+/** Core Formalhaut File **/
+
 (function ($) {
     "use strict";
 

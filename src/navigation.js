@@ -1,3 +1,5 @@
+/** Navigation for Formalhaut **/
+
 (function ($, $F) {
 
     var nav = {};
