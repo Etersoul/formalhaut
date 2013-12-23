@@ -35,7 +35,9 @@ var $F = ($F) ? $F : null;
                 success: function (data, status) {
                     // Is not logged in
                     if (data.status === '400') {
-                        opt.success(data.data);
+                        
+                    } else {
+                        opt.success(data.data, status);
                     }
                 },
                 complete: opt.complete || null,
