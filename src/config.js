@@ -2,18 +2,26 @@
 (function ($, $F) {
     "use strict";
     
+    var hook = [];
     var localConfig = {};
-    $F.loadConfig = function (config) {
+    
+    $F.config = {};
+    
+    $F.config.load = function (config) {
         localConfig = config;
+        for (var i in hook) {
+            hook[i]();
+        }
     };
     
-    $F.getConfig = function (key) {
+    $F.config.get = function (key) {
         return localConfig[key];
     };
     
-    /** Shorthand of $F.ajax with URL that have been prepended with serviceUri **/
-    $F.service = function (data) {
-        data.url = localConfig.serviceUri + data.url;
-        return $F.ajax(data);
+    $F.config.hook = function (fn) {
+        if (typeof fn === 'function') {
+            console.log(arguments);
+            hook.push(fn);
+        }
     };
 })(jQuery, $F);

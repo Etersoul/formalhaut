@@ -20,10 +20,13 @@ var $F = ($F) ? $F : null;
 
     function initF() {
         var config = {};
-
+        
         var build = function () {
         
         };
+        
+        // Move global window to $F.window. In short, no DOM accessing global variable allowed.
+        build.window = window;
 
         build.ajax = function (opt) {
             return $.ajax({
@@ -33,6 +36,16 @@ var $F = ($F) ? $F : null;
                 contentType: opt.contentType || 'application/json',
                 dataType: opt.dataType || 'json',
                 success: function (data, status) {
+                    // Support for legacy code without status
+                    if (!data.status) {
+                        var oldData = data;
+                        data = {};
+                        data.status = '200';
+                        data.data = oldData;
+                        
+                        console.warn('Using the old service payload style. Please move to the new service style');
+                    }
+                    
                     // Is not logged in
                     if (data.status === '400') {
                         
@@ -63,6 +76,12 @@ var $F = ($F) ? $F : null;
                 contentType: 'application/json',
                 complete: onComplete
             });
+        };
+        
+        /** Shorthand of $F.ajax with URL that have been prepended with serviceUri **/
+        build.service = function (data) {
+            data.url = $F.config.get('serviceUri') + data.url;
+            return build.ajax(data);
         };
 
         build.logError = function (err) {

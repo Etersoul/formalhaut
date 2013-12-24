@@ -7,7 +7,8 @@
 	<target name="compile">
 		<concat destfile="build/formalhaut.js">
             <filelist dir="src" files="core.js" />
-            <fileset dir="src" includes="*.js" excludes="core.js" />
+            <filelist dir="src" files="config.js" />
+            <fileset dir="src" includes="*.js" excludes="core.js,config.js" />
         </concat>
 	</target>
 </project>

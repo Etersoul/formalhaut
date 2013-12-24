@@ -20,10 +20,13 @@ var $F = ($F) ? $F : null;
 
     function initF() {
         var config = {};
-
+        
         var build = function () {
         
         };
+        
+        // Move global window to $F.window. In short, no DOM accessing global variable allowed.
+        build.window = window;
 
         build.ajax = function (opt) {
             return $.ajax({
@@ -33,6 +36,16 @@ var $F = ($F) ? $F : null;
                 contentType: opt.contentType || 'application/json',
                 dataType: opt.dataType || 'json',
                 success: function (data, status) {
+                    // Support for legacy code without status
+                    if (!data.status) {
+                        var oldData = data;
+                        data = {};
+                        data.status = '200';
+                        data.data = oldData;
+                        
+                        console.warn('Using the old service payload style. Please move to the new service style');
+                    }
+                    
                     // Is not logged in
                     if (data.status === '400') {
                         
@@ -63,6 +76,12 @@ var $F = ($F) ? $F : null;
                 contentType: 'application/json',
                 complete: onComplete
             });
+        };
+        
+        /** Shorthand of $F.ajax with URL that have been prepended with serviceUri **/
+        build.service = function (data) {
+            data.url = $F.config.get('serviceUri') + data.url;
+            return build.ajax(data);
         };
 
         build.logError = function (err) {
@@ -99,19 +118,27 @@ var $F = ($F) ? $F : null;
 (function ($, $F) {
     "use strict";
     
+    var hook = [];
     var localConfig = {};
-    $F.loadConfig = function (config) {
+    
+    $F.config = {};
+    
+    $F.config.load = function (config) {
         localConfig = config;
+        for (var i in hook) {
+            hook[i]();
+        }
     };
     
-    $F.getConfig = function (key) {
+    $F.config.get = function (key) {
         return localConfig[key];
     };
     
-    /** Shorthand of $F.ajax with URL that have been prepended with serviceUri **/
-    $F.service = function (data) {
-        data.url = localConfig.serviceUri + data.url;
-        return $F.ajax(data);
+    $F.config.hook = function (fn) {
+        if (typeof fn === 'function') {
+            console.log(arguments);
+            hook.push(fn);
+        }
     };
 })(jQuery, $F);
 /** Formatting Toolbelt for Formalhaut **/
@@ -245,23 +272,39 @@ var $F = ($F) ? $F : null;
 })(jQuery, $F);/** Navigation for Formalhaut **/
 (function ($, $F) {
     "use strict";
+    
+    /** Private member **/
+    var lastHash = '';
+    var ndLastHash = '';
+    var lastParam = '';
+    var isFirstLoad = true;
+    var executionStack = [];
+    
+    /** Instance member **/
     var nav = {};
 
     nav.subView = null;
     nav.currentSubView = null;
     nav.scriptStack = [];
-    nav.executionStack = [];
     nav.rel = '';
+    
+    init();
+    
+    // Bind the config hook to prepare
+    $F.config.hook(function () {
+        nav.defaultRel = $F.config.get('defaultRel');
+    });
 
     nav.getScript = function getScript(opt) {
         // take the previous hash, and iterate from the fullest path to the only first part of path.
 
         // check if we have reach the parent module, and stop fetching script immediately if true
         for (var i = nav.scriptStack.length - 1; i >= 0; i--) {
-            if (nav.scriptStack[i].req == opt.hash) {
+            if (nav.scriptStack[i].req === opt.hash) {
                 // clear the stack until the parent module
                 while (nav.scriptStack.length > 0) {
                     var l = nav.scriptStack[nav.scriptStack.length - 1].req;
+
                     // if the stack string length is less than the current iteration hash string length, stop because the result will always no
                     if (l.length < opt.hash.length || l == opt.hash) break;
 
@@ -274,10 +317,10 @@ var $F = ($F) ? $F : null;
                     param: opt.query.split('/')
                 };
 
-                for (var j = 0; j < scriptStack.length; j++) {
-                    nav.scriptStack[j].script.onLoaded(arg);
+                for (var j = 0; j < nav.scriptStack.length; j++) {
+                    nav.scriptStack[j].script.afterLoad(arg);
                 }
-
+                
                 nav.getHTML(opt.query);
                 return;
             }
@@ -285,15 +328,15 @@ var $F = ($F) ? $F : null;
 
         // Check if the debug mode is activated
         var getDebug;
-        if ($F.debug) {
+        if ($F.config.get('debug')) {
             getDebug = nav.getDebugScript;
         } else {
             getDebug = $.getScript;
         }
 
-        getDebug('view/' + opt.hash + '.js', function () {
-            var subView = BM.subView;
-
+        getDebug($F.config.get('viewUri') + opt.hash + '.js', function () {
+            var subView = nav.subView;
+            
             var stack = {
                 script: subView,
                 req: opt.hash
@@ -305,9 +348,10 @@ var $F = ($F) ? $F : null;
                 opt.hash = '';
                 nav.scriptStack = [];
             }
-            nav.executionStack.push(stack);
+            
+            executionStack.push(stack);
 
-            if (opt.hash == '') {
+            if (opt.hash === '') {
                 nav.getHTML(opt.query);
                 return;
             }
@@ -321,10 +365,10 @@ var $F = ($F) ? $F : null;
     };
 
     nav.getHTML = function getHTML(q) {
-        if (nav.executionStack.length == 0)
+        if (executionStack.length == 0)
             return;
 
-        var stack = nav.executionStack.pop();
+        var stack = executionStack.pop();
         var subView = stack.script;
 
         if (nav.scriptStack.length > 0) {
@@ -339,12 +383,13 @@ var $F = ($F) ? $F : null;
         var req = stack.req;
         nav.currentSubView = subView;
 
-        if (typeof subView.rel != 'undefined' && $('#' + subView.rel).length > 0)
+        if (typeof subView.rel !== 'undefined' && $('#' + subView.rel).length > 0) {
             nav.rel = subView.rel;
-        else
-            nav.rel = BM.defaultRel;
-
-        $('#' + nav.rel).load('view/' + req + '.html', function () {
+        } else {
+            nav.rel = nav.defaultRel;
+        }
+        
+        $('#' + nav.rel).load($F.config.get('viewUri') + req + '.html', function () {
             //onLoadedCommonFunction();
             var qs = q.split('/');
 
@@ -353,9 +398,9 @@ var $F = ($F) ? $F : null;
                 fullParam: q,
                 param: qs
             };
-            subView.onLoaded(arg);
+            subView.afterLoad(arg);
 
-            document.title = BM.module + ' | ' + subView.title;
+            document.title = nav.module + ' | ' + subView.title;
             if (executionStack.length == 0) {
                 if (typeof subView.onDefaultChild == 'function') {
                     subView.onDefaultChild(arg);
@@ -369,13 +414,13 @@ var $F = ($F) ? $F : null;
     nav.getDebugScript = function getDebugScript(url, callback) {
         var script = $('<script></script>').attr('src', url);
         $('head').append(script);
+        callback();
     };
 
     /******** Formalhaut Engine Hook *********/
 
     // new way to load view script
     $F.loadView = function loadView(obj) {
-        //console.info('Load subview ' + obj.title);
         nav.subView = obj;
     };
 
@@ -386,7 +431,108 @@ var $F = ($F) ? $F : null;
             hash: location.hash
         });
     };
-
+    
+    // Inialization function
+    function init() {
+        $(window).on('hashchange', function () {
+            if (window.location.hash.substr(1,1) === '/') {
+                var h=window.location.hash.substr(2)
+                var q='';
+                var h2='';
+                
+                // get second hash
+                if(h.search(/#/) != -1) {
+                    h2=h.substr(h.search(/#/)+1);
+                    h=h.substr(0,h.search(/#/));
+                }
+                
+                if(h.search(/\./) != -1) {
+                    q=h.substr(h.search(/\./)+1);
+                    h=h.substr(0,h.search(/\./));
+                }
+                
+                if(lastHash == h) {
+                    // just the query is changed
+                    if(lastParam != q) {
+                        var current = nav.currentSubView;
+                        var arg = {
+                            fullParam: q,
+                            param: q.split('/')
+                        };
+                        for(;;) {
+                            current.afterParamLoaded(arg);
+                            if(typeof current.parent == 'undefined') break;
+                            current = current.parent;
+                        }
+                        
+                        lastParam = q;
+                        return;
+                    }
+                }
+                
+                // check if second hash changed
+                if(ndLastHash != h2) {
+                    // show the popup
+                    var gpaboxAj;
+                    if(h2 != '') {
+                        var fancySplit = h2.split('.');
+                        $.getScript('view/'+h+'/'+fancySplit[0]+'.js',function(){
+                            $.get('view/'+h+'/'+fancySplit[0]+'.html', function(data){
+                                BM.popup.show({
+                                    content: data,
+                                    scrolling: 'no',
+                                    minHeight: '700px',
+                                    afterClose: function() {
+                                        location.hash='#/'+h;
+                                    }
+                                });
+                            
+                                if(typeof popupSubView == "object") {
+                                    var arg2 = {
+                                        fullParam: '',
+                                        param: null
+                                    };
+                                    if(fancySplit.length > 1) {
+                                        arg2.fullParam = fancySplit[1];
+                                        arg2.param = fancySplit[1].split('/');
+                                    }
+                                    popupSubView.parent = nav.currentSubView;
+                                    
+                                    popupSubView.afterLoad(arg2);
+                                }
+                            }, 'html');
+                        });
+                    } else {
+                        BM.popup.close();
+                    }
+                    ndLastHash = h2;
+                    
+                    if(!isFirstLoad) {
+                        return;
+                    }
+                }
+                
+                isFirstLoad = false;
+                
+                // if we go to the ancestor path, invalidate last path data and stack
+                if(lastHash.indexOf(h) == 0) {
+                    lastHash = '';
+                    executionStack = [];
+                }
+                
+                var i=0;
+                nav.getScript({
+                    hash: h,
+                    query: q
+                });
+                
+                lastHash = h;
+                lastParam = q;
+            
+                $('a').off('click', nav.anchorBind).on('click', nav.anchorBind);
+            }
+        });
+    }
 })(jQuery, $F);
 /** Tutorial Processing Engine for Formalhaut **/
 (function ($, $F) {
