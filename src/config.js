@@ -20,7 +20,6 @@
     
     $F.config.hook = function (fn) {
         if (typeof fn === 'function') {
-            console.log(arguments);
             hook.push(fn);
         }
     };

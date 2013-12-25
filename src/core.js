@@ -46,15 +46,13 @@ var $F = ($F) ? $F : null;
                         console.warn('Using the old service payload style. Please move to the new service style');
                     }
                     
-                    // Is not logged in
-                    if (data.status === '400') {
-                        
-                    } else {
-                        opt.success(data.data, status);
-                    }
+                    opt.success(data.data, data.status);
                 },
                 complete: opt.complete || null,
-                error: function () {
+                error: function (data) {
+                    if (data.status === 401) {
+                        location.href = $F.config.get('loginUri');
+                    }
                     $F.logError('Ajax error');
                 }
             });

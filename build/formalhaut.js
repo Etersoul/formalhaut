@@ -46,15 +46,13 @@ var $F = ($F) ? $F : null;
                         console.warn('Using the old service payload style. Please move to the new service style');
                     }
                     
-                    // Is not logged in
-                    if (data.status === '400') {
-                        
-                    } else {
-                        opt.success(data.data, status);
-                    }
+                    opt.success(data.data, data.status);
                 },
                 complete: opt.complete || null,
-                error: function () {
+                error: function (data) {
+                    if (data.status === 401) {
+                        location.href = $F.config.get('loginUri');
+                    }
                     $F.logError('Ajax error');
                 }
             });
@@ -136,7 +134,6 @@ var $F = ($F) ? $F : null;
     
     $F.config.hook = function (fn) {
         if (typeof fn === 'function') {
-            console.log(arguments);
             hook.push(fn);
         }
     };
@@ -152,7 +149,7 @@ var $F = ($F) ? $F : null;
 			return 'Invalid format (yyyy-mm-dd)';
 		}
 		
-		var month = BM.months;
+		var month = $F.config.get('months');
 		var d = date.split(/-/);
 		if(d[1][0]=='0'){
 			d[1] = parseInt(d[1][1]);
@@ -171,7 +168,7 @@ var $F = ($F) ? $F : null;
 			return 'Invalid format (yyyy-mm-dd)';
 		}
         
-		var month = BM.shortMonths;
+		var month = $F.config.get('shortMonths');
 		var d = date.split(/-/);
 		if (d[1][0] == '0'){
 			d[1] = parseInt(d[1][1]);
@@ -269,7 +266,8 @@ var $F = ($F) ? $F : null;
 		
 		return date + ' ' + time;
 	};
-})(jQuery, $F);/** Navigation for Formalhaut **/
+})(jQuery, $F);
+/** Navigation for Formalhaut **/
 (function ($, $F) {
     "use strict";
     
@@ -279,13 +277,13 @@ var $F = ($F) ? $F : null;
     var lastParam = '';
     var isFirstLoad = true;
     var executionStack = [];
+    var scriptStack = [];
     
     /** Instance member **/
     var nav = {};
 
     nav.subView = null;
     nav.currentSubView = null;
-    nav.scriptStack = [];
     nav.rel = '';
     
     init();
@@ -299,16 +297,16 @@ var $F = ($F) ? $F : null;
         // take the previous hash, and iterate from the fullest path to the only first part of path.
 
         // check if we have reach the parent module, and stop fetching script immediately if true
-        for (var i = nav.scriptStack.length - 1; i >= 0; i--) {
-            if (nav.scriptStack[i].req === opt.hash) {
+        for (var i = scriptStack.length - 1; i >= 0; i--) {
+            if (scriptStack[i].req === opt.hash) {
                 // clear the stack until the parent module
-                while (nav.scriptStack.length > 0) {
-                    var l = nav.scriptStack[nav.scriptStack.length - 1].req;
+                while (scriptStack.length > 0) {
+                    var l = scriptStack[scriptStack.length - 1].req;
 
                     // if the stack string length is less than the current iteration hash string length, stop because the result will always no
                     if (l.length < opt.hash.length || l == opt.hash) break;
 
-                    nav.scriptStack.pop();
+                    scriptStack.pop();
                 }
 
                 // run the onLoaded function of the parent
@@ -317,8 +315,8 @@ var $F = ($F) ? $F : null;
                     param: opt.query.split('/')
                 };
 
-                for (var j = 0; j < nav.scriptStack.length; j++) {
-                    nav.scriptStack[j].script.afterLoad(arg);
+                for (var j = 0; j < scriptStack.length; j++) {
+                    scriptStack[j].script.afterLoad(arg);
                 }
                 
                 nav.getHTML(opt.query);
@@ -340,13 +338,14 @@ var $F = ($F) ? $F : null;
             var stack = {
                 script: subView,
                 req: opt.hash
-            }
+            };
+            
             if (typeof subView.require != 'undefined') {
                 opt.hash = subView.require;
             } else {
                 // reset scriptstack if we reach the main module
                 opt.hash = '';
-                nav.scriptStack = [];
+                scriptStack = [];
             }
             
             executionStack.push(stack);
@@ -371,11 +370,11 @@ var $F = ($F) ? $F : null;
         var stack = executionStack.pop();
         var subView = stack.script;
 
-        if (nav.scriptStack.length > 0) {
-            subView.parent = nav.scriptStack[scriptStack.length - 1].script;
+        if (scriptStack.length > 0) {
+            subView.parent = scriptStack[scriptStack.length - 1].script;
         }
         
-        nav.scriptStack.push({
+        scriptStack.push({
             script: subView,
             req: stack.req
         });
@@ -398,9 +397,10 @@ var $F = ($F) ? $F : null;
                 fullParam: q,
                 param: qs
             };
+            
             subView.afterLoad(arg);
 
-            document.title = nav.module + ' | ' + subView.title;
+            document.title = subView.title;
             if (executionStack.length == 0) {
                 if (typeof subView.onDefaultChild == 'function') {
                     subView.onDefaultChild(arg);
@@ -613,8 +613,6 @@ var $F = ($F) ? $F : null;
 			var wd = { h: $('html').innerHeight(), w: $('html').innerWidth(), y: $(document).scrollTop() };
 			
 			// auto scroll if out of viewport
-			console.log(act);
-			console.log(wd);
 			if (act.y + act.h < wd.y || act.y < wd.y) {
 				$('html,body').stop().animate({ scrollTop: act.y - 50 }, 300);
 			} else if (act.y + act.h > wd.h + wd.y || act.y > wd.h + wd.y) {

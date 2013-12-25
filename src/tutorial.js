@@ -77,8 +77,6 @@
 			var wd = { h: $('html').innerHeight(), w: $('html').innerWidth(), y: $(document).scrollTop() };
 			
 			// auto scroll if out of viewport
-			console.log(act);
-			console.log(wd);
 			if (act.y + act.h < wd.y || act.y < wd.y) {
 				$('html,body').stop().animate({ scrollTop: act.y - 50 }, 300);
 			} else if (act.y + act.h > wd.h + wd.y || act.y > wd.h + wd.y) {

@@ -9,7 +9,7 @@
 			return 'Invalid format (yyyy-mm-dd)';
 		}
 		
-		var month = BM.months;
+		var month = $F.config.get('months');
 		var d = date.split(/-/);
 		if(d[1][0]=='0'){
 			d[1] = parseInt(d[1][1]);
@@ -28,7 +28,7 @@
 			return 'Invalid format (yyyy-mm-dd)';
 		}
         
-		var month = BM.shortMonths;
+		var month = $F.config.get('shortMonths');
 		var d = date.split(/-/);
 		if (d[1][0] == '0'){
 			d[1] = parseInt(d[1][1]);

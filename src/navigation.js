@@ -8,13 +8,13 @@
     var lastParam = '';
     var isFirstLoad = true;
     var executionStack = [];
+    var scriptStack = [];
     
     /** Instance member **/
     var nav = {};
 
     nav.subView = null;
     nav.currentSubView = null;
-    nav.scriptStack = [];
     nav.rel = '';
     
     init();
@@ -28,16 +28,16 @@
         // take the previous hash, and iterate from the fullest path to the only first part of path.
 
         // check if we have reach the parent module, and stop fetching script immediately if true
-        for (var i = nav.scriptStack.length - 1; i >= 0; i--) {
-            if (nav.scriptStack[i].req === opt.hash) {
+        for (var i = scriptStack.length - 1; i >= 0; i--) {
+            if (scriptStack[i].req === opt.hash) {
                 // clear the stack until the parent module
-                while (nav.scriptStack.length > 0) {
-                    var l = nav.scriptStack[nav.scriptStack.length - 1].req;
+                while (scriptStack.length > 0) {
+                    var l = scriptStack[scriptStack.length - 1].req;
 
                     // if the stack string length is less than the current iteration hash string length, stop because the result will always no
                     if (l.length < opt.hash.length || l == opt.hash) break;
 
-                    nav.scriptStack.pop();
+                    scriptStack.pop();
                 }
 
                 // run the onLoaded function of the parent
@@ -46,8 +46,8 @@
                     param: opt.query.split('/')
                 };
 
-                for (var j = 0; j < nav.scriptStack.length; j++) {
-                    nav.scriptStack[j].script.afterLoad(arg);
+                for (var j = 0; j < scriptStack.length; j++) {
+                    scriptStack[j].script.afterLoad(arg);
                 }
                 
                 nav.getHTML(opt.query);
@@ -69,13 +69,14 @@
             var stack = {
                 script: subView,
                 req: opt.hash
-            }
+            };
+            
             if (typeof subView.require != 'undefined') {
                 opt.hash = subView.require;
             } else {
                 // reset scriptstack if we reach the main module
                 opt.hash = '';
-                nav.scriptStack = [];
+                scriptStack = [];
             }
             
             executionStack.push(stack);
@@ -100,11 +101,11 @@
         var stack = executionStack.pop();
         var subView = stack.script;
 
-        if (nav.scriptStack.length > 0) {
-            subView.parent = nav.scriptStack[scriptStack.length - 1].script;
+        if (scriptStack.length > 0) {
+            subView.parent = scriptStack[scriptStack.length - 1].script;
         }
         
-        nav.scriptStack.push({
+        scriptStack.push({
             script: subView,
             req: stack.req
         });
@@ -127,9 +128,10 @@
                 fullParam: q,
                 param: qs
             };
+            
             subView.afterLoad(arg);
 
-            document.title = nav.module + ' | ' + subView.title;
+            document.title = subView.title;
             if (executionStack.length == 0) {
                 if (typeof subView.onDefaultChild == 'function') {
                     subView.onDefaultChild(arg);
