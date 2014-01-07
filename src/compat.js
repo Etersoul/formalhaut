@@ -1,3 +1,6 @@
+/** This is a compatibility layer for Formalhaut engine.
+  * This file is only temporary and might be removed when the system isn't needed anymore
+  **/
 var BM = {};
 (function ($, $F) {
     "use strict";
