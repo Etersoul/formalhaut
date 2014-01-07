@@ -23,6 +23,11 @@
     $F.config.hook(function () {
         nav.defaultRel = $F.config.get('defaultRel');
     });
+    
+    // Reste the navigation engine
+    nav.reset = function navInit() {
+        nav.rel = '';
+    };
 
     nav.getScript = function getScript(opt) {
         // take the previous hash, and iterate from the fullest path to the only first part of path.
@@ -64,7 +69,7 @@
         }
 
         getDebug($F.config.get('viewUri') + opt.hash + '.js', function () {
-            var subView = nav.subView;
+            var subView = $F.compat.subViewInit(nav.subView);
             
             var stack = {
                 script: subView,
@@ -166,31 +171,33 @@
     // Inialization function
     function init() {
         $(window).on('hashchange', function () {
+            nav.reset();
+            
             if (window.location.hash.substr(1,1) === '/') {
-                var h=window.location.hash.substr(2)
-                var q='';
-                var h2='';
+                var h = window.location.hash.substr(2)
+                var q = '';
+                var h2 = '';
                 
                 // get second hash
-                if(h.search(/#/) != -1) {
-                    h2=h.substr(h.search(/#/)+1);
-                    h=h.substr(0,h.search(/#/));
+                if (h.search(/#/) != -1) {
+                    h2 = h.substr(h.search(/#/)+1);
+                    h = h.substr(0,h.search(/#/));
                 }
                 
-                if(h.search(/\./) != -1) {
-                    q=h.substr(h.search(/\./)+1);
-                    h=h.substr(0,h.search(/\./));
+                if (h.search(/\./) != -1) {
+                    q = h.substr(h.search(/\./)+1);
+                    h = h.substr(0,h.search(/\./));
                 }
                 
-                if(lastHash == h) {
+                if (lastHash == h) {
                     // just the query is changed
-                    if(lastParam != q) {
+                    if (lastParam != q) {
                         var current = nav.currentSubView;
                         var arg = {
                             fullParam: q,
                             param: q.split('/')
                         };
-                        for(;;) {
+                        for (;;) {
                             current.afterParamLoaded(arg);
                             if(typeof current.parent == 'undefined') break;
                             current = current.parent;
@@ -202,10 +209,10 @@
                 }
                 
                 // check if second hash changed
-                if(ndLastHash != h2) {
+                if (ndLastHash != h2) {
                     // show the popup
                     var gpaboxAj;
-                    if(h2 != '') {
+                    if (h2 != '') {
                         var fancySplit = h2.split('.');
                         $.getScript('view/'+h+'/'+fancySplit[0]+'.js',function(){
                             $.get('view/'+h+'/'+fancySplit[0]+'.html', function(data){
@@ -238,7 +245,7 @@
                     }
                     ndLastHash = h2;
                     
-                    if(!isFirstLoad) {
+                    if (!isFirstLoad) {
                         return;
                     }
                 }
