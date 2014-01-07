@@ -138,7 +138,10 @@ var $F = ($F) ? $F : null;
         }
     };
 })(jQuery, $F);
+var BM = {};
 (function ($, $F) {
+    "use strict";
+    
     $F.compat = {};
     
     $F.compat.subViewInit = function (navSubView) {
@@ -149,7 +152,7 @@ var $F = ($F) ? $F : null;
         // Access global var of window.subView
         if (window.subView) {
             var sv = window.subView;
-            sv.afterLoad = sv.onLoad;
+            sv.afterLoad = sv.onLoaded;
             
             console.warn('Using deprecated var subView.');
             alert('Using deprecated var subView.');
@@ -157,6 +160,14 @@ var $F = ($F) ? $F : null;
             return sv;
         }
     }
+    
+    $F.config.hook(function() {
+        BM.ajax = function (data) {
+            $F.ajax(data);
+        };
+        
+        BM.serviceUri = $F.config.get('serviceUri');
+    });
 })(jQuery, $F);/** Formatting Toolbelt for Formalhaut **/
 (function ($, $F) {
     "use strict";
@@ -315,6 +326,10 @@ var $F = ($F) ? $F : null;
     // Reste the navigation engine
     nav.reset = function navInit() {
         nav.rel = '';
+        nav.subView = null;
+        nav.currentSubView = null;
+        scriptStack = [];
+        executionStack = [];
     };
 
     nav.getScript = function getScript(opt) {
@@ -393,7 +408,6 @@ var $F = ($F) ? $F : null;
 
         var stack = executionStack.pop();
         var subView = stack.script;
-        console.log(stack);
 
         if (scriptStack.length > 0) {
             subView.parent = scriptStack[scriptStack.length - 1].script;
@@ -505,7 +519,7 @@ var $F = ($F) ? $F : null;
                         var fancySplit = h2.split('.');
                         $.getScript('view/'+h+'/'+fancySplit[0]+'.js',function(){
                             $.get('view/'+h+'/'+fancySplit[0]+'.html', function(data){
-                                BM.popup.show({
+                                $F.popup.show({
                                     content: data,
                                     scrolling: 'no',
                                     minHeight: '700px',
@@ -530,7 +544,7 @@ var $F = ($F) ? $F : null;
                             }, 'html');
                         });
                     } else {
-                        BM.popup.close();
+                        $F.popup.close();
                     }
                     ndLastHash = h2;
                     

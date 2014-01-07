@@ -27,6 +27,10 @@
     // Reste the navigation engine
     nav.reset = function navInit() {
         nav.rel = '';
+        nav.subView = null;
+        nav.currentSubView = null;
+        scriptStack = [];
+        executionStack = [];
     };
 
     nav.getScript = function getScript(opt) {
@@ -216,7 +220,7 @@
                         var fancySplit = h2.split('.');
                         $.getScript('view/'+h+'/'+fancySplit[0]+'.js',function(){
                             $.get('view/'+h+'/'+fancySplit[0]+'.html', function(data){
-                                BM.popup.show({
+                                $F.popup.show({
                                     content: data,
                                     scrolling: 'no',
                                     minHeight: '700px',
@@ -241,7 +245,7 @@
                             }, 'html');
                         });
                     } else {
-                        BM.popup.close();
+                        $F.popup.close();
                     }
                     ndLastHash = h2;
                     
