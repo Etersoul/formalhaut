@@ -24,6 +24,23 @@
         nav.defaultRel = $F.config.get('defaultRel');
     });
     
+    /** Public Function **/
+    $F.nav = {};
+    
+    // Set the location (hash) to the specific path
+    $F.nav.setLocation = function setUrl(path) {
+        location.hash = path;
+    };
+    
+    // Force refresh the current view, including reload the script and the html
+    $F.nav.refreshSubView = function refreshView(obj) {
+        subView = null;
+        nav.getScript({
+            hash: location.hash
+        });
+    };
+    
+    
     // Reste the navigation engine
     nav.reset = function navInit() {
         nav.rel = '';
@@ -49,14 +66,16 @@
                     scriptStack.pop();
                 }
 
-                // run the onLoaded function of the parent
+                // run the afterLoad function of the parent, and process the HTML data
                 var arg = {
                     fullParam: opt.query,
                     param: opt.query.split('/')
                 };
 
                 for (var j = 0; j < scriptStack.length; j++) {
-                    scriptStack[j].script.afterLoad(arg);
+                    if (typeof scriptStack[j].script.afterChildLoad === 'function') {
+                        scriptStack[j].script.afterChildLoad(arg);
+                    }
                 }
                 
                 nav.getHTML(opt.query);
@@ -73,32 +92,36 @@
         }
 
         getDebug($F.config.get('viewUri') + opt.hash + '.js', function () {
-            var subView = $F.compat.subViewInit(nav.subView);
+            // TODO: remove compatibility layer
+            var view = $F.compat.subViewInit(nav.subView);
             
+            // Clear the nav.subView
+            nav.subView = null;
             var stack = {
-                script: subView,
+                script: view,
                 req: opt.hash
             };
             
-            if (typeof subView.require != 'undefined') {
-                opt.hash = subView.require;
+            var required = '';
+            if (typeof view.require != 'undefined') {
+                required = view.require;
             } else {
                 // reset scriptstack if we reach the main module
-                opt.hash = '';
                 scriptStack = [];
             }
             
             executionStack.push(stack);
 
-            if (opt.hash === '') {
+            // No more required script to fetch, start getting the HTML
+            if (required === '') {
                 nav.getHTML(opt.query);
                 return;
             }
 
             nav.getScript({
-                hash: opt.hash,
+                hash: required,
                 query: opt.query,
-                parent: nav.subView
+                parent: view
             });
         });
     };
@@ -108,27 +131,26 @@
             return;
 
         var stack = executionStack.pop();
-        var subView = stack.script;
+        var view = stack.script;
 
         if (scriptStack.length > 0) {
-            subView.parent = scriptStack[scriptStack.length - 1].script;
+            view.parent = scriptStack[scriptStack.length - 1].script;
         }
         
         scriptStack.push({
-            script: subView,
+            script: view,
             req: stack.req
         });
 
         var req = stack.req;
-        nav.currentSubView = subView;
+        nav.currentSubView = view;
 
-        if (typeof subView.rel !== 'undefined' && $('#' + subView.rel).length > 0) {
-            nav.rel = subView.rel;
-        } else {
-            nav.rel = nav.defaultRel;
+        var rel = nav.defaultRel;
+        if (typeof view.rel !== 'undefined' && $('#' + view.rel).length > 0) {
+             rel = view.rel;
         }
         
-        $('#' + nav.rel).load($F.config.get('viewUri') + req + '.html', function () {
+        $('#' + rel).load($F.config.get('viewUri') + req + '.html', function () {
             //onLoadedCommonFunction();
             var qs = q.split('/');
 
@@ -138,15 +160,16 @@
                 param: qs
             };
             
-            subView.afterLoad(arg);
+            view.afterLoad(arg);
 
-            document.title = subView.title;
+            document.title = view.title;
             if (executionStack.length == 0) {
-                if (typeof subView.onDefaultChild == 'function') {
-                    subView.onDefaultChild(arg);
+                if (typeof view.onDefaultChild == 'function') {
+                    view.onDefaultChild(arg);
                 }
                 return;
             }
+            
             nav.getHTML(q);
         });
     };
@@ -164,30 +187,26 @@
         nav.subView = obj;
     };
 
-    // force refresh the current view, including reload the script and the html
-    $F.refreshSubView = function refreshView(obj) {
-        subView = null;
-        nav.getScript({
-            hash: location.hash
-        });
-    };
-    
     // Inialization function
     function init() {
         $(window).on('hashchange', function () {
-            nav.reset();
+            //nav.reset();
             
             if (window.location.hash.substr(1,1) === '/') {
-                var h = window.location.hash.substr(2)
+                var hash = window.location.hash.substr(2)
                 var q = '';
                 var h2 = '';
                 
+                // Default for h is the first hash itself
+                var h = hash;
+                
                 // get second hash
                 if (h.search(/#/) != -1) {
-                    h2 = h.substr(h.search(/#/)+1);
-                    h = h.substr(0,h.search(/#/));
+                    h2 = hash.substr(h.search(/#/)+1);
+                    h = hash.substr(0,h.search(/#/));
                 }
                 
+                // Split the dot argument with the physical path
                 if (h.search(/\./) != -1) {
                     q = h.substr(h.search(/\./)+1);
                     h = h.substr(0,h.search(/\./));
@@ -256,6 +275,9 @@
                 
                 isFirstLoad = false;
                 
+                // Cut the physical path data to the array
+                var pathArray = h.split(/\//g);
+                
                 // if we go to the ancestor path, invalidate last path data and stack
                 if(lastHash.indexOf(h) == 0) {
                     lastHash = '';
@@ -264,6 +286,7 @@
                 
                 var i=0;
                 nav.getScript({
+                    hashList: pathArray,
                     hash: h,
                     query: q
                 });
