@@ -2,7 +2,9 @@
 (function ($, $F) {
     "use strict";
     
-    $F.serialize = function (selector) {
+    $F.serialize = function (selector, returnStringify) {
+        returnStringify = (returnStringify == null) ? false : returnStringify;
+        
         var json = {};
 		jQuery.map($(selector).serializeArray(), function(n, i){
 			if(typeof json[n.name] == 'undefined') {
@@ -16,6 +18,10 @@
 				}
 			}
 		});
+        
+        if (returnStringify) {
+            return JSON.stringify(json);
+        }
         
         return json;
     };
