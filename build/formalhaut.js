@@ -155,14 +155,37 @@ var BM = {};
         // Access global var of window.subView
         if (window.subView) {
             var sv = window.subView;
+            
+            // Clean up the global variable
+            delete window.subView;
             sv.afterLoad = sv.onLoaded;
             
-            console.warn('Using deprecated var subView.');
-            alert('Using deprecated var subView.');
+            console.warn('Using deprecated var subView. Please change to $F.loadView.');
+            alert('Using deprecated var subView. Please change to $F.loadView.');
             
             return sv;
         }
-    }
+    };
+    
+    $F.compat.popupSubViewInit = function (navSubView) {
+        if (navSubView != null) {
+            return navSubView;
+        }
+        
+        // Access global var of window.subView
+        if (window.popupSubView) {
+            var sv = window.popupSubView;
+            
+            // Clean up the global variable
+            delete window.popupSubView;
+            sv.afterLoad = sv.onLoaded;
+            
+            console.warn('Using deprecated var popupSubView. Please use $F.loadView with "popup: true".');
+            alert('Using deprecated var popupSubView. Please use $F.loadView with "popup: true".');
+            
+            return sv;
+        }
+    };
     
     $F.config.hook(function() {
         BM.ajax = function (data) {
@@ -304,7 +327,7 @@ var BM = {};
 /** Navigation for Formalhaut **/
 (function ($, $F) {
     "use strict";
-    
+
     /** Private member **/
     var lastHash = '';
     var ndLastHash = '';
@@ -312,29 +335,29 @@ var BM = {};
     var isFirstLoad = true;
     var executionStack = [];
     var scriptStack = [];
-    
+
     /** Instance member **/
     var nav = {};
 
     nav.subView = null;
     nav.currentSubView = null;
     nav.rel = '';
-    
+
     init();
-    
+
     // Bind the config hook to prepare
     $F.config.hook(function () {
         nav.defaultRel = $F.config.get('defaultRel');
     });
-    
+
     /** Public Function **/
     $F.nav = {};
-    
+
     // Set the location (hash) to the specific path
     $F.nav.setLocation = function setUrl(path) {
         location.hash = path;
     };
-    
+
     // Force refresh the current view, including reload the script and the html
     $F.nav.refreshSubView = function refreshView(obj) {
         subView = null;
@@ -342,8 +365,8 @@ var BM = {};
             hash: location.hash
         });
     };
-    
-    
+
+
     // Reste the navigation engine
     nav.reset = function navInit() {
         nav.rel = '';
@@ -380,7 +403,7 @@ var BM = {};
                         scriptStack[j].script.afterChildLoad(arg);
                     }
                 }
-                
+
                 nav.getHTML(opt.query);
                 return;
             }
@@ -398,13 +421,19 @@ var BM = {};
             // TODO: remove compatibility layer
             var view = $F.compat.subViewInit(nav.subView);
             
+            if(typeof view.isPopup !== 'undefined' && view.isPopup) {
+                console.warn('Accessing popup as a non-popup view.');
+                alert('Accessing popup as a non-popup view.');
+                return;
+            }
+
             // Clear the nav.subView
             nav.subView = null;
             var stack = {
                 script: view,
                 req: opt.hash
             };
-            
+
             var required = '';
             if (typeof view.require != 'undefined') {
                 required = view.require;
@@ -412,7 +441,7 @@ var BM = {};
                 // reset scriptstack if we reach the main module
                 scriptStack = [];
             }
-            
+
             executionStack.push(stack);
 
             // No more required script to fetch, start getting the HTML
@@ -439,7 +468,7 @@ var BM = {};
         if (scriptStack.length > 0) {
             view.parent = scriptStack[scriptStack.length - 1].script;
         }
-        
+
         scriptStack.push({
             script: view,
             req: stack.req
@@ -452,7 +481,7 @@ var BM = {};
         if (typeof view.rel !== 'undefined' && $('#' + view.rel).length > 0) {
              rel = view.rel;
         }
-        
+
         $('#' + rel).load($F.config.get('viewUri') + req + '.html', function () {
             //onLoadedCommonFunction();
             var qs = q.split('/');
@@ -462,7 +491,7 @@ var BM = {};
                 fullParam: q,
                 param: qs
             };
-            
+
             view.afterLoad(arg);
 
             document.title = view.title;
@@ -472,9 +501,51 @@ var BM = {};
                 }
                 return;
             }
-            
+
             nav.getHTML(q);
         });
+    };
+
+    nav.openPopup = function openPopup(base, arg) {
+        $.getScript('view/' + base +'/' + arg[0] + '.js', function () {
+            var popup = $F.compat.popupSubViewInit(nav.subView);
+
+            $.get('view/' + base + '/' + arg[0] + '.html', function (data) {
+                $F.popup.show({
+                    content: data,
+                    scrolling: 'no',
+                    minHeight: '700px',
+                    afterClose: function () {
+                        location.hash = '#/' + base;
+                    }
+                });
+
+                if(typeof popup == "object") {
+                    if (!popup.isPopup) {
+                        console.warn('Trying to access non-popup enabled view.');
+                    }
+                    
+                    popup.close = nav.closePopup;
+                    
+                    var arg2 = {
+                        fullParam: '',
+                        param: null
+                    };
+
+                    if (arg.length > 1) {
+                        arg2.fullParam = arg[1];
+                        arg2.param = arg[1].split('/');
+                    }
+                    popup.parent = nav.currentSubView;
+
+                    popup.afterLoad(arg2);
+                }
+            }, 'html');
+        });
+    };
+    
+    nav.closePopup = function closePopup() {
+        $F.popup.close();
     };
 
     nav.getDebugScript = function getDebugScript(url, callback) {
@@ -493,28 +564,26 @@ var BM = {};
     // Inialization function
     function init() {
         $(window).on('hashchange', function () {
-            //nav.reset();
-            
             if (window.location.hash.substr(1,1) === '/') {
                 var hash = window.location.hash.substr(2)
                 var q = '';
                 var h2 = '';
-                
+
                 // Default for h is the first hash itself
                 var h = hash;
-                
+
                 // get second hash
                 if (h.search(/#/) != -1) {
                     h2 = hash.substr(h.search(/#/)+1);
                     h = hash.substr(0,h.search(/#/));
                 }
-                
+
                 // Split the dot argument with the physical path
                 if (h.search(/\./) != -1) {
                     q = h.substr(h.search(/\./)+1);
                     h = h.substr(0,h.search(/\./));
                 }
-                
+
                 if (lastHash == h) {
                     // just the query is changed
                     if (lastParam != q) {
@@ -528,75 +597,50 @@ var BM = {};
                             if(typeof current.parent == 'undefined') break;
                             current = current.parent;
                         }
-                        
+
                         lastParam = q;
                         return;
                     }
                 }
-                
+
                 // check if second hash changed
                 if (ndLastHash != h2) {
                     // show the popup
                     var gpaboxAj;
                     if (h2 != '') {
-                        var fancySplit = h2.split('.');
-                        $.getScript('view/'+h+'/'+fancySplit[0]+'.js',function(){
-                            $.get('view/'+h+'/'+fancySplit[0]+'.html', function(data){
-                                $F.popup.show({
-                                    content: data,
-                                    scrolling: 'no',
-                                    minHeight: '700px',
-                                    afterClose: function() {
-                                        location.hash='#/'+h;
-                                    }
-                                });
-                            
-                                if(typeof popupSubView == "object") {
-                                    var arg2 = {
-                                        fullParam: '',
-                                        param: null
-                                    };
-                                    if(fancySplit.length > 1) {
-                                        arg2.fullParam = fancySplit[1];
-                                        arg2.param = fancySplit[1].split('/');
-                                    }
-                                    popupSubView.parent = nav.currentSubView;
-                                    
-                                    popupSubView.afterLoad(arg2);
-                                }
-                            }, 'html');
-                        });
+                        var popupSplit = h2.split('.');
+                        nav.openPopup(h, popupSplit);
                     } else {
                         $F.popup.close();
                     }
                     ndLastHash = h2;
-                    
+
                     if (!isFirstLoad) {
                         return;
                     }
                 }
-                
+
                 isFirstLoad = false;
-                
+
                 // Cut the physical path data to the array
                 var pathArray = h.split(/\//g);
-                
+
                 // if we go to the ancestor path, invalidate last path data and stack
                 if(lastHash.indexOf(h) == 0) {
                     lastHash = '';
                     executionStack = [];
                 }
-                
+
                 var i=0;
                 nav.getScript({
                     hashList: pathArray,
                     hash: h,
                     query: q
                 });
-                
+
                 lastHash = h;
                 lastParam = q;
-            
+
                 $('a').off('click', nav.anchorBind).on('click', nav.anchorBind);
             }
         });
