@@ -4,7 +4,8 @@
 
     /** Private member **/
     var lastHash = '';
-    var ndLastHash = '';
+    var firstLastHash = '';
+    var secondLastHash = '';
     var lastParam = '';
     var isFirstLoad = true;
     var executionStack = [];
@@ -26,6 +27,34 @@
 
     /** Public Function **/
     $F.nav = {};
+    
+    // Get current hash in the URL
+    $F.nav.getCurrentHash = function getCurrentHash() {
+        return location.hash;
+    };
+    
+    // Get last hash
+    $F.nav.getLastHash = function getLashHash(breakHash) {
+        if (breakHash) {
+            var hash = breakHash.split('.');
+            return {
+                first: hash[0],
+                second: hash[1]
+            };
+        }
+        
+        return $F.nav.getLastHash();
+    };
+    
+    // Get first section of last hash
+    $F.nav.getFirstLastHash = function getFirstLastHash() {
+        return firstLastHash;
+    };
+    
+    // Get second section of last hash (argument)
+    $F.nav.getLastParam = function getLastParam() {
+        return lastParam;
+    };
 
     // Set the location (hash) to the specific path
     $F.nav.setLocation = function setUrl(path) {
@@ -40,8 +69,7 @@
         });
     };
 
-
-    // Reste the navigation engine
+    // Reset the navigation engine
     nav.reset = function navInit() {
         nav.rel = '';
         nav.subView = null;
@@ -173,6 +201,10 @@
                 if (typeof view.onDefaultChild == 'function') {
                     view.onDefaultChild(arg);
                 }
+                
+                if (view.defaultChildView) {
+                    history.replaceState(null, "", "#/" + view.defaultChildView);
+                }
                 return;
             }
 
@@ -188,7 +220,7 @@
                 $F.popup.show({
                     content: data,
                     scrolling: 'no',
-                    minHeight: '700px',
+                    autoExpand: true,
                     afterClose: function () {
                         location.hash = '#/' + base;
                     }
@@ -238,7 +270,19 @@
     // Inialization function
     function init() {
         $(window).on('hashchange', function () {
-            if (window.location.hash.substr(1,1) === '/') {
+            // Proceed second hash shorthand
+            if (window.location.hash.substr(0, 2) === '##') {
+                window.history.replaceState(null, "", '#/' + firstLastHash + '#' + window.location.hash.substr(2));
+            }
+            
+            // Proceed argument hash shorthand
+            if (window.location.hash.substr(0, 2) === '#.') {
+                window.history.replaceState(null, "", '#/' + firstLastHash + '.' + window.location.hash.substr(2)); 
+            }
+            
+            // Proceed primary hash
+            if (window.location.hash.substr(0, 2) === '#/') {
+                var newHash = window.location.hash;
                 var hash = window.location.hash.substr(2)
                 var q = '';
                 var h2 = '';
@@ -258,7 +302,7 @@
                     h = h.substr(0,h.search(/\./));
                 }
 
-                if (lastHash == h) {
+                if (firstLastHash == h) {
                     // just the query is changed
                     if (lastParam != q) {
                         var current = nav.currentSubView;
@@ -278,7 +322,7 @@
                 }
 
                 // check if second hash changed
-                if (ndLastHash != h2) {
+                if (secondLastHash != h2) {
                     // show the popup
                     var gpaboxAj;
                     if (h2 != '') {
@@ -287,7 +331,7 @@
                     } else {
                         $F.popup.close();
                     }
-                    ndLastHash = h2;
+                    secondLastHash = h2;
 
                     if (!isFirstLoad) {
                         return;
@@ -300,8 +344,8 @@
                 var pathArray = h.split(/\//g);
 
                 // if we go to the ancestor path, invalidate last path data and stack
-                if(lastHash.indexOf(h) == 0) {
-                    lastHash = '';
+                if(firstLastHash.indexOf(h) == 0) {
+                    firstLastHash = '';
                     executionStack = [];
                 }
 
@@ -312,7 +356,8 @@
                     query: q
                 });
 
-                lastHash = h;
+                firstLastHash = h;
+                lastHash = newHash;
                 lastParam = q;
 
                 $('a').off('click', nav.anchorBind).on('click', nav.anchorBind);
