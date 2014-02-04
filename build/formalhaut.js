@@ -202,127 +202,127 @@ var BM = {};
     $F.format = {};
     
     $F.format.longDate = function (date) {
-		if (typeof date != 'string' || /^\d{4}-\d\d-\d\d$/.test(date) == false) {
-			return 'Invalid format (yyyy-mm-dd)';
-		}
-		
-		var month = $F.config.get('months');
-		var d = date.split(/-/);
-		if(d[1][0]=='0'){
-			d[1] = parseInt(d[1][1]);
-		} else {
-			d[1] = parseInt(d[1]);
-		}
-		
-		if(d[2][0]=='0'){
-			d[2] = d[2][1];
-		}
-		return d[2] + ' ' + month[d[1]] + ' ' + d[0];
-	};
-	
-	$F.format.shortDate = function (date) {
-		if (typeof date != 'string' || /^\d{4}-\d\d-\d\d$/.test(date) == false) {
-			return 'Invalid format (yyyy-mm-dd)';
-		}
+        if (typeof date != 'string' || /^\d{4}-\d\d-\d\d$/.test(date) == false) {
+            return 'Invalid format (yyyy-mm-dd)';
+        }
         
-		var month = $F.config.get('shortMonths');
-		var d = date.split(/-/);
-		if (d[1][0] == '0'){
-			d[1] = parseInt(d[1][1]);
-		} else {
-			d[1] = parseInt(d[1]);
-		}
-		
-		if(d[2][0] == '0'){
-			d[2] = d[2][1];
-		}
+        var month = $F.config.get('months');
+        var d = date.split(/-/);
+        if(d[1][0]=='0'){
+            d[1] = parseInt(d[1][1]);
+        } else {
+            d[1] = parseInt(d[1]);
+        }
         
-		return d[2] + ' ' + month[d[1]] + ' ' + d[0];
-	};
-	
-	$F.format.date = function (date) {
-		var d = date.split(/-/);
-		return d[2] + '/' + d[1] + '/' + d[0];
-	};
-	
-	$F.format.period = function (period) {
+        if(d[2][0]=='0'){
+            d[2] = d[2][1];
+        }
+        return d[2] + ' ' + month[d[1]] + ' ' + d[0];
+    };
+    
+    $F.format.shortDate = function (date) {
+        if (typeof date != 'string' || /^\d{4}-\d\d-\d\d$/.test(date) == false) {
+            return 'Invalid format (yyyy-mm-dd)';
+        }
+        
+        var month = $F.config.get('shortMonths');
+        var d = date.split(/-/);
+        if (d[1][0] == '0'){
+            d[1] = parseInt(d[1][1]);
+        } else {
+            d[1] = parseInt(d[1]);
+        }
+        
+        if(d[2][0] == '0'){
+            d[2] = d[2][1];
+        }
+        
+        return d[2] + ' ' + month[d[1]] + ' ' + d[0];
+    };
+    
+    $F.format.date = function (date) {
+        var d = date.split(/-/);
+        return d[2] + '/' + d[1] + '/' + d[0];
+    };
+    
+    $F.format.period = function (period) {
         if (/\d{4}-\d-\d/.test(period) === false) {
             return period || '';
         }
         
-		var p = period.split(/-/);
-		p[0] = p[0] + '/' + (parseInt(p[0]) + 1).toString();
-		
-		if (p[1] == '1') {
-			p[1] = 'Odd';
-		} else if (p[1] == '2') {
-			p[1] = 'Even';
-		} else if (p[1] == '3') {
-			p[1] = 'Compact';
-		}
-		
-		if (p[2] == '0') { 
-			return p[0] + ' - ' + p[1];
-		}
-		
-		return p[0] + ' - ' + p[1] + ' - ' + p[2];
-	};
+        var p = period.split(/-/);
+        p[0] = p[0] + '/' + (parseInt(p[0]) + 1).toString();
+        
+        if (p[1] == '1') {
+            p[1] = 'Odd';
+        } else if (p[1] == '2') {
+            p[1] = 'Even';
+        } else if (p[1] == '3') {
+            p[1] = 'Compact';
+        }
+        
+        if (p[2] == '0') { 
+            return p[0] + ' - ' + p[1];
+        }
+        
+        return p[0] + ' - ' + p[1] + ' - ' + p[2];
+    };
     
-	$F.format.number = function (number) {
-		if (number == null) {
+    $F.format.number = function (number) {
+        if (number == null) {
             return number;
         }
         
-		var num = number.toString();
-		if (/^-?[0-9.]*(,[0-9]*)?$/.test(num)) {
-			num = num.replace(/\./g,'').split(',');
-			var s2 = '', dot = '';
-			while (num[0].length > 0){
-				if (num[0] == '-') {
-					s2 = '-' + s2;
-					break;
-				}
+        var num = number.toString();
+        if (/^-?[0-9.]*(,[0-9]*)?$/.test(num)) {
+            num = num.replace(/\./g,'').split(',');
+            var s2 = '', dot = '';
+            while (num[0].length > 0){
+                if (num[0] == '-') {
+                    s2 = '-' + s2;
+                    break;
+                }
                 
-				s2 = num[0].substr((num[0].length - 3 >= 0 ? num[0].length - 3 : 0), 3) + dot + s2;
-				dot = '.';
-				num[0] = num[0].substr(0, num[0].length - 3);
-			}
+                s2 = num[0].substr((num[0].length - 3 >= 0 ? num[0].length - 3 : 0), 3) + dot + s2;
+                dot = '.';
+                num[0] = num[0].substr(0, num[0].length - 3);
+            }
             
-			if (num.length > 1) {
+            if (num.length > 1) {
                 s2 += ',' + num[1];
             }
-			num = s2;
-		}
-		
-		return num;
-	};
+            num = s2;
+        }
+        
+        return num;
+    };
     
-	$F.format.shortTime = function (time) {
-		var t = time.split(':');
-		return t[0] + ':' + t[1];
-	};
+    $F.format.shortTime = function (time) {
+        var t = time.split(':');
+        return t[0] + ':' + t[1];
+    };
     
-	$F.format.longTime = function (time) {
-		var t = time.split(':');
-		return t[0] + ':' + t[1] + ':' + t[2].substr(0,2);
-	};
+    $F.format.longTime = function (time) {
+        var t = time.split(':');
+        return t[0] + ':' + t[1] + ':' + t[2].substr(0,2);
+    };
     
-	$F.format.dateTime = function (input, formatDateCallback, formatTimeCallback) {
-		formatDateCallback = formatDateCallback || 'Date';
-		formatTimeCallback = formatTimeCallback || 'ShortTime';
-		
-		var t = input.split(' ');
-		var call = formatDateCallback;
-		var date = $F.format[call](t[0]);
-		
-		var time = t[1];
-		if(formatTimeCallback != '') {
-			var callTime = formatTimeCallback;
-			time = $F.format[callTime](time);
-		}
-		
-		return date + ' ' + time;
-	};
+    $F.format.dateTime = function (input, formatDateCallback, formatTimeCallback) {
+        formatDateCallback = formatDateCallback || 'Date';
+        formatTimeCallback = formatTimeCallback || 'ShortTime';
+        
+        var t = input.split(' ');
+        var call = formatDateCallback;
+        var date = $F.format[call](t[0]);
+        
+        var time = t[1];
+        if(formatTimeCallback != '') {
+            var callTime = formatTimeCallback;
+            time = $F.format[callTime](time);
+        }
+        
+        return date + ' ' + time;
+    };
 })(jQuery, $F);
 /** Navigation for Formalhaut **/
 (function ($, $F) {
@@ -646,94 +646,204 @@ var BM = {};
         });
     }
 })(jQuery, $F);
-/** Popup module for Formalhaut Engine **/
-(function ($, $F) {
+/** Popup module for Formalhaut Engine * */
+(function($, $F) {
     "use strict";
-    
+
     var isPopupActive = false,
-        element = null;
+        objOption,
+        wrap = null;
     
+    // Mutation observer (only available in modern browser and IE11+)
+    var observer = new MutationObserver(function (mutations) {
+        resizePopup();
+    });
+
     $F.popup = {};
-    
+
     $F.popup.show = function (obj) {
-        if(this.isPopupActive) return;
-        
+        if (this.isPopupActive)
+            return;
+
         obj.content = obj.content || '';
         obj.width = obj.width || 'auto';
         obj.height = obj.height || 'auto';
         obj.modal = obj.modal || false;
+        obj.autoExpand = obj.autoExpand || false;
         
+        objOption = obj;
+
         var w = $(window).width();
         var h = $(window).height();
         var self = this;
         
-        var d = $('<div></div>').css({width: obj.width, height: obj.height, background: '#fff', zIndex: '11005', position: 'absolute', border: '5px solid #ccc', padding: '10px', borderRadius: '10px' }).html(obj.content);
-        var bg = $('<div></div>').css({width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', position:'absolute', zIndex: '11000', top: '0', left: '0' });
+        if (wrap != null) {
+            wrap = null;
+        }
         
-        var wrap = $('<div></div>').css({width: w + 'px', height: h + 'px', position:'fixed', top: '0', left: '0', zIndex: '10999', opacity: '0' });
+        var divBorder = $('<div id="popupborder"></div>').css({
+            width : obj.width,
+            height : obj.height,
+            background : '#fff',
+            zIndex : '11005',
+            position : 'absolute',
+            border : '5px solid #ccc',
+            padding : '10px',
+            borderRadius : '10px'
+        });
         
-        // add event onclick that will remove the popup if it's not a modal popup
-        if(!obj.modal) {
+        var bg = $('<div></div>').css({
+            width : '100%',
+            height : '100%',
+            background : 'rgba(0,0,0,0.7)',
+            position : 'absolute',
+            zIndex : '11000',
+            top : '0',
+            left : '0'
+        });
+        
+        var divContent = $('<div id="popupcontent"></div>').html(obj.content);
+
+        wrap = $('<div></div>').css({
+            width : w + 'px',
+            height : h + 'px',
+            position : 'fixed',
+            top : '0',
+            left : '0',
+            zIndex : '10999',
+            opacity : '0'
+        });
+
+        // add event onclick that will remove the popup if it's not a modal
+        // popup
+        if (!obj.modal) {
             var del = $('<div></div>').css({
-                width: '20px',
-                height: '17px',
-                position:'absolute',
-                top: '-15px',
-                right: '10px',
-                background: '#333',
-                borderRadius: '14px',
-                border: '4px solid #ccc',
-                color: '#fff',
-                fontSize: '14px',
-                textAlign: 'center',
-                paddingBottom: '2px',
-                cursor:'pointer'
+                width : '20px',
+                height : '17px',
+                position : 'absolute',
+                top : '-15px',
+                right : '10px',
+                background : '#333',
+                borderRadius : '14px',
+                border : '4px solid #ccc',
+                color : '#fff',
+                fontSize : '14px',
+                textAlign : 'center',
+                paddingBottom : '2px',
+                cursor : 'pointer'
             }).html('X').click(function() {
-                self.close({ afterClose: obj.afterClose });
+                self.close({
+                    afterClose : obj.afterClose
+                });
+            });
+
+            bg.click(function() {
+                self.close({
+                    afterClose : obj.afterClose
+                });
             });
             
-            bg.click(function() {
-                self.close({ afterClose: obj.afterClose });
-            });
-            d.append(del);
+            divBorder.append(del);
         }
-        
 
-        wrap.append(bg).append(d);
+        divBorder.append(divContent);
+        wrap.append(bg).append(divBorder);
+
+        $('body').css({
+            position : 'relative',
+            overflow : 'hidden'
+        }).append(wrap);
         
-        $('body').css({position: 'relative', 'overflow': 'hidden'}).append(wrap);
-        wrap.animate({opacity: 1}, 250);
-        
+        wrap.animate({
+            opacity : 1
+        }, 250);
+
         // reposition the popup
-        var wd = d.width();
-        var wh = d.height();
         resizePopup();
         $(window).on('resize.popup', resizePopup);
-        
+
         isPopupActive = true;
-        element = wrap;
         
-        function resizePopup() {
-            w = $(window).width();
-            h = $(window).height();
-            wrap.css({width: w + 'px', height: h + 'px'});
-            d.css({width: obj.width, height: obj.height});
-            d.css('left', (w / 2 - wd / 2 - 15) + 'px');
-            d.css('top', (h/2 - wh/2 - 15) + 'px');
+        // Bind the mutation observer
+        if (obj.autoExpand) {
+            observer.observe(divBorder[0], {
+                childList: true,
+                subtree: true 
+            }); 
         }
     }
-    
-	$F.popup.close = function (param) {
+
+    $F.popup.close = function (param) {
         param = param || {};
-        if(param.afterClose) {
+        if (param.afterClose) {
             param.afterClose();
         }
-        
+
         isPopupActive = false;
-        $('body').css({'overflow': ''});
-        element.animate({opacity: '0'}, 250, function() { $(this).remove() });
+        $('body').css({
+            overflow : ''
+        });
+        
+        wrap.animate({
+            opacity : '0'
+        }, 250, function() {
+            $(this).remove()
+        });
+    };
+
+    $F.popup.resize = function (param) {
+        param = param || {};
+        param.width = param.width || null;
+        resizePopup(param);
     };
     
+    function resizePopup(param) {
+        param = param || {};
+        param.width = param.width || null;
+        
+        var w = $(window).width();
+        var h = $(window).height();
+
+        wrap.css({
+            width : w + 'px',
+            height : h + 'px'
+        });
+        
+        var divBorder = $('#popupborder', wrap);
+        var divContent = $('#popupcontent', divBorder);
+        divBorder.css({
+            width : objOption.width,
+            height : objOption.height
+        });
+        
+        if (param.width != null) {
+            divBorder.css('width', param.width);
+        }
+        
+        var wd = divBorder.width();
+        var wh = divBorder.height();
+        
+        if (wh >= h - 80) {
+            wh = h - 80;
+            divBorder.css({
+                height: wh
+            });
+            
+            divContent.css({
+                overflow: 'auto', 
+                height: wh - 10
+            });
+        } else {
+            divBorder.css({
+                height: 'auto'
+            });
+        }
+        
+        divBorder.css({
+            left: (w / 2 - wd / 2 - 15) + 'px',
+            top: (h / 2 - wh / 2 - 15) + 'px'
+        });
+    }
 })(jQuery, $F);
 /** Data serialization for Formalhaut **/
 (function ($, $F) {
@@ -743,18 +853,18 @@ var BM = {};
         returnStringify = (returnStringify == null) ? false : returnStringify;
         
         var json = {};
-		jQuery.map($(selector).serializeArray(), function(n, i){
-			if(typeof json[n.name] == 'undefined') {
-				json[n.name] = n.value;
-			} else {
-				if(typeof json[n.name] == 'object') {
-					json[n.name].push(n.value);
-				} else {
-					var temp = json[n.name];
-					json[n.name] = [temp, n.value];
-				}
-			}
-		});
+        jQuery.map($(selector).serializeArray(), function(n, i){
+            if(typeof json[n.name] == 'undefined') {
+                json[n.name] = n.value;
+            } else {
+                if(typeof json[n.name] == 'object') {
+                    json[n.name].push(n.value);
+                } else {
+                    var temp = json[n.name];
+                    json[n.name] = [temp, n.value];
+                }
+            }
+        });
         
         if (returnStringify) {
             return JSON.stringify(json);
@@ -771,124 +881,123 @@ var BM = {};
     
     $F.tutorial = {};
     
-	$F.tutorial.loadTutorial = function (script) {
-		$.ajax({
-			url: $F.getConfig('tutorialDirectory') + script,
-			type: 'GET',
-			dataType: 'json',
-			success: function(data) {
-				tutorialScript = data;
-				$F.tutorial.processTutorial();
-			}
-		});
-	};
+    $F.tutorial.loadTutorial = function (script) {
+        $.ajax({
+            url: $F.getConfig('tutorialDirectory') + script,
+            type: 'GET',
+            dataType: 'json',
+            success: function(data) {
+                tutorialScript = data;
+                $F.tutorial.processTutorial();
+            }
+        });
+    };
     
-	$F.tutorial.processTutorial = function () {
-		if (tutorialScript == null) {
+    $F.tutorial.processTutorial = function () {
+        if (tutorialScript == null) {
             return;
         }
-		
-		tutorialStep++;
-		
-		// destroy anything if we reach the end
-		if (tutorialScript[tutorialStep] === undefined) {
-			$('#tutorialenginelayer').remove();
-			$('body').css('overflow', 'auto');
-			tutorialScript = null;
-			tutorialStep = -1;
-			return;
-		}
-		
-		$F.tutorial.tutorial(tutorialScript[tutorialStep]);
+        
+        tutorialStep++;
+        
+        // destroy anything if we reach the end
+        if (tutorialScript[tutorialStep] === undefined) {
+            $('#tutorialenginelayer').remove();
+            $('body').css('overflow', 'auto');
+            tutorialScript = null;
+            tutorialStep = -1;
+            return;
+        }
+        
+        $F.tutorial.tutorial(tutorialScript[tutorialStep]);
 
-	};
+    };
     
-	$F.tutorial.tutorial = function (act) {
-		// unbind and rebind to render the tutorial layer on window resize
-		var stateAct = act;
-		$(window).off('resize.rendertutorial').on('resize.rendertutorial', function(){
-			$F.tutorial.tutorial(stateAct);
-		});
-		
-		act.disableCenter = act.disableCenter || true;
-		
-		$('#tutorialenginelayer').remove();
-		
-		// disable the global scrolling
-		$('body').css('overflow', 'hidden').append('<div id="tutorialenginelayer" style="z-index: 9999;"></div>');
-		
-		switch (act.type) {
-		case 'show':
-		default:
-			// define the box
-			var north = $('<div style="width: 100%; position: absolute; background: rgba(0, 0, 0, 0.5); top: 0px; z-index: 2000;"></div>');
-			var south = $('<div style="width: 100%; position: absolute; background: rgba(0, 0, 0, 0.5); height: 100%; z-index: 2000;"></div>');
-			var west = $('<div style="position: absolute; background: rgba(0, 0, 0, 0.5); z-index: 2000;"></div>');
-			var east = $('<div style="width: 100%; position: absolute; background: rgba(0, 0, 0, 0.5); z-index: 2000;"></div>');
-			
-			if(act.focusNode != undefined) {
-				act.x = $(act.focusNode).eq(0).offset().left;
-				act.y = $(act.focusNode).eq(0).offset().top;
-				act.w = $(act.focusNode).eq(0).innerWidth();
-				act.h = $(act.focusNode).eq(0).innerHeight();
-			}
-			
-			if(act.padding) {
-				act.x -= act.padding;
-				act.y -= act.padding;
-				act.w += act.padding * 2;
-				act.h += act.padding * 2;
-			}
-			
-			var wd = { h: $('html').innerHeight(), w: $('html').innerWidth(), y: $(document).scrollTop() };
-			
-			// auto scroll if out of viewport
-			if (act.y + act.h < wd.y || act.y < wd.y) {
-				$('html,body').stop().animate({ scrollTop: act.y - 50 }, 300);
-			} else if (act.y + act.h > wd.h + wd.y || act.y > wd.h + wd.y) {
-				$('html,body').stop().animate({ scrollTop: act.y - 50 }, 300);
-			}
-			
-			north.css({ height: act.y + 'px' });
-			south.css({ top: (act.y + act.h) + 'px' });
-			west.css({ top: act.y + 'px', width: act.x + 'px', height: act.h + 'px' });
-			east.css({ top: act.y + 'px', height: act.h + 'px', left: (act.x + act.w) + 'px' });
-			
-			$('#tutorialenginelayer').append(north).append(south).append(west).append(east);
-			
-			// disable inner if needed
-			if (act.disableCenter) {
-				var center = $('<div style="position: absolute; z-index: 500;"></div>');
-				center.css({width: act.w, height: act.h, top: act.y, left: act.x});
-				$('#tutorialenginelayer').append(center);
-			}
-			
-			// send in the message box
-			var msgbox = $('<div style="border: 3px solid #999;position:absolute; z-index: 505; width: 300px; height: 100px; background: #fff; padding: 5px;font-size:11px;"></div>');
-			
-			var msgw = act.messageW || 300;
-			var msgh = act.messageH || 100;			
-			var msgx = act.x + act.w + 20;
-			var msgy = act.y;
-			
-			if (act.x + act.w + msgw + 20 > wd.w) {
-				msgx = act.x - msgw - 20;
-			}
-			
-			msgbox.css({top: msgy + 'px', left: msgx + 'px', width: msgw + 'px', height: msgh + 'px' });
-			msgbox.html(act.message);
-			$('#tutorialenginelayer').append(msgbox);
-		}
-	};
+    $F.tutorial.tutorial = function (act) {
+        // unbind and rebind to render the tutorial layer on window resize
+        var stateAct = act;
+        $(window).off('resize.rendertutorial').on('resize.rendertutorial', function(){
+            $F.tutorial.tutorial(stateAct);
+        });
+        
+        act.disableCenter = act.disableCenter || true;
+        
+        $('#tutorialenginelayer').remove();
+        
+        // disable the global scrolling
+        $('body').css('overflow', 'hidden').append('<div id="tutorialenginelayer" style="z-index: 9999;"></div>');
+        
+        switch (act.type) {
+        case 'show':
+        default:
+            // define the box
+            var north = $('<div style="width: 100%; position: absolute; background: rgba(0, 0, 0, 0.5); top: 0px; z-index: 2000;"></div>');
+            var south = $('<div style="width: 100%; position: absolute; background: rgba(0, 0, 0, 0.5); height: 100%; z-index: 2000;"></div>');
+            var west = $('<div style="position: absolute; background: rgba(0, 0, 0, 0.5); z-index: 2000;"></div>');
+            var east = $('<div style="width: 100%; position: absolute; background: rgba(0, 0, 0, 0.5); z-index: 2000;"></div>');
+            
+            if(act.focusNode != undefined) {
+                act.x = $(act.focusNode).eq(0).offset().left;
+                act.y = $(act.focusNode).eq(0).offset().top;
+                act.w = $(act.focusNode).eq(0).innerWidth();
+                act.h = $(act.focusNode).eq(0).innerHeight();
+            }
+            
+            if(act.padding) {
+                act.x -= act.padding;
+                act.y -= act.padding;
+                act.w += act.padding * 2;
+                act.h += act.padding * 2;
+            }
+            
+            var wd = { h: $('html').innerHeight(), w: $('html').innerWidth(), y: $(document).scrollTop() };
+            
+            // auto scroll if out of viewport
+            if (act.y + act.h < wd.y || act.y < wd.y) {
+                $('html,body').stop().animate({ scrollTop: act.y - 50 }, 300);
+            } else if (act.y + act.h > wd.h + wd.y || act.y > wd.h + wd.y) {
+                $('html,body').stop().animate({ scrollTop: act.y - 50 }, 300);
+            }
+            
+            north.css({ height: act.y + 'px' });
+            south.css({ top: (act.y + act.h) + 'px' });
+            west.css({ top: act.y + 'px', width: act.x + 'px', height: act.h + 'px' });
+            east.css({ top: act.y + 'px', height: act.h + 'px', left: (act.x + act.w) + 'px' });
+            
+            $('#tutorialenginelayer').append(north).append(south).append(west).append(east);
+            
+            // disable inner if needed
+            if (act.disableCenter) {
+                var center = $('<div style="position: absolute; z-index: 500;"></div>');
+                center.css({width: act.w, height: act.h, top: act.y, left: act.x});
+                $('#tutorialenginelayer').append(center);
+            }
+            
+            // send in the message box
+            var msgbox = $('<div style="border: 3px solid #999;position:absolute; z-index: 505; width: 300px; height: 100px; background: #fff; padding: 5px;font-size:11px;"></div>');
+            
+            var msgw = act.messageW || 300;
+            var msgh = act.messageH || 100;            
+            var msgx = act.x + act.w + 20;
+            var msgy = act.y;
+            
+            if (act.x + act.w + msgw + 20 > wd.w) {
+                msgx = act.x - msgw - 20;
+            }
+            
+            msgbox.css({top: msgy + 'px', left: msgx + 'px', width: msgw + 'px', height: msgh + 'px' });
+            msgbox.html(act.message);
+            $('#tutorialenginelayer').append(msgbox);
+        }
+    };
     
-	$F.tutorial.clearTutorialLayer = function () {
-		$('#tutorialenginelayer').remove();
-		$('body').css('overflow', 'auto');
-		
-		// kill the render event on resize
-		$(window).off('resize.rendertutorial');
-	};
-    
+    $F.tutorial.clearTutorialLayer = function () {
+        $('#tutorialenginelayer').remove();
+        $('body').css('overflow', 'auto');
+        
+        // kill the render event on resize
+        $(window).off('resize.rendertutorial');
+    };
 })(jQuery, $F);
 /** Validation Library for Formalhaut **/
 (function ($){
