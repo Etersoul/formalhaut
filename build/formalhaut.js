@@ -637,7 +637,7 @@ var BM = {};
                             param: q.split('/')
                         };
                         for (;;) {
-                            current.afterParamLoaded(arg);
+                            current.afterParamLoad(arg);
                             if(typeof current.parent == 'undefined') break;
                             current = current.parent;
                         }
