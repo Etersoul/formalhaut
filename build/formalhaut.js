@@ -423,8 +423,12 @@ var BM = {};
                 // run the afterLoad function of the parent, and process the HTML data
                 var arg = {
                     fullParam: opt.query,
-                    param: opt.query.split('/')
+                    param: []
                 };
+                
+                if (opt.query !== "") {
+                    arg.param = opt.query.split('/');
+                }
 
                 for (var j = 0; j < scriptStack.length; j++) {
                     if (typeof scriptStack[j].script.afterChildLoad === 'function') {
@@ -517,8 +521,12 @@ var BM = {};
             // execute onLoaded script from the view's script
             var arg = {
                 fullParam: q,
-                param: qs
+                param: []
             };
+            
+            if (q !== "") {
+                arg.param = qs;
+            }
 
             view.afterLoad(arg);
 
@@ -561,13 +569,17 @@ var BM = {};
                     
                     var arg2 = {
                         fullParam: '',
-                        param: null
+                        param: []
                     };
 
                     if (arg.length > 1) {
                         arg2.fullParam = arg[1];
-                        arg2.param = arg[1].split('/');
+                        
+                        if (arg2.fullParam !== "") {
+                            arg2.param = arg[1].split('/');
+                        }
                     }
+                    
                     popup.parent = nav.currentSubView;
 
                     popup.afterLoad(arg2);
@@ -634,8 +646,13 @@ var BM = {};
                         var current = nav.currentSubView;
                         var arg = {
                             fullParam: q,
-                            param: q.split('/')
+                            param: []
                         };
+                        
+                        if (q !== "") {
+                            arg.param = q.split('/');
+                        }
+                        
                         for (;;) {
                             current.afterParamLoad(arg);
                             if(typeof current.parent == 'undefined') break;
