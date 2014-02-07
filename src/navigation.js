@@ -239,7 +239,7 @@
                         console.warn('Trying to access non-popup enabled view.');
                     }
                     
-                    popup.close = nav.closePopup;
+                    popup.closePopup = nav.closePopup;
                     
                     var arg2 = {
                         fullParam: '',
@@ -263,6 +263,7 @@
     };
     
     nav.closePopup = function closePopup() {
+        $F.nav.setLocation('#/' + firstLastHash);
         $F.popup.close();
     };
 

@@ -565,7 +565,7 @@ var BM = {};
                         console.warn('Trying to access non-popup enabled view.');
                     }
                     
-                    popup.close = nav.closePopup;
+                    popup.closePopup = nav.closePopup;
                     
                     var arg2 = {
                         fullParam: '',
@@ -589,6 +589,7 @@ var BM = {};
     };
     
     nav.closePopup = function closePopup() {
+        $F.nav.setLocation('#/' + firstLastHash);
         $F.popup.close();
     };
 
@@ -796,7 +797,7 @@ var BM = {};
             }
         }
         
-        var lastPage = option.dataCount / option.perPage;
+        var lastPage = Math.ceil(option.dataCount / option.perPage);
 
         element.html('');
         element.append($('<span class="pagination">' + option.before + '</span>'));

@@ -86,7 +86,7 @@
             }
         }
         
-        var lastPage = option.dataCount / option.perPage;
+        var lastPage = Math.ceil(option.dataCount / option.perPage);
 
         element.html('');
         element.append($('<span class="pagination">' + option.before + '</span>'));
