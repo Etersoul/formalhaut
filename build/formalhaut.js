@@ -331,6 +331,7 @@ var BM = {};
     /** Private member **/
     var lastHash = '';
     var firstLastHash = '';
+    var firstLastHashNoParam = '';
     var secondLastHash = '';
     var lastParam = '';
     var isFirstLoad = true;
@@ -491,8 +492,10 @@ var BM = {};
     };
 
     nav.getHTML = function getHTML(q) {
-        if (executionStack.length == 0)
+        if (executionStack.length == 0) {
+            fixHashModifier();
             return;
+        }
 
         var stack = executionStack.pop();
         var view = stack.script;
@@ -539,18 +542,22 @@ var BM = {};
                 if (view.defaultChildView) {
                     history.replaceState(null, "", "#/" + view.defaultChildView);
                 }
+                
+                prepareHashModifier();
+                
                 return;
             }
-
+            
             nav.getHTML(q);
         });
     };
 
-    nav.openPopup = function openPopup(base, arg) {
-        $.getScript('view/' + base +'/' + arg[0] + '.js', function () {
+    nav.openPopup = function openPopup(firstHash, arg) {
+        var base = firstHash.split('.');
+        $.getScript('view/' + base[0] +'/' + arg[0] + '.js', function () {
             var popup = $F.compat.popupSubViewInit(nav.subView);
 
-            $.get('view/' + base + '/' + arg[0] + '.html', function (data) {
+            $.get('view/' + base[0] + '/' + arg[0] + '.html', function (data) {
                 $F.popup.show({
                     content: data,
                     scrolling: 'no',
@@ -605,6 +612,30 @@ var BM = {};
     $F.loadView = function loadView(obj) {
         nav.subView = obj;
     };
+    
+    function prepareHashModifier() {
+        // Search the link that use the modifier hash
+        $('a[href^="##"]').each(function (i, el) {
+            $(el).attr('data-orig-href', $(el).attr('href'));
+        });
+        
+        // Search and proceed argument hash shorthand
+        $('a[href^="#."]').each(function (i, el) {
+            $(el).attr('data-orig-href', $(el).attr('href'));
+        });
+        
+        fixHashModifier();
+    }
+    
+    function fixHashModifier() {
+        $('a[data-orig-href^="##"]').each(function (i, el) {
+            $(el).attr('href', '#/' + firstLastHash + '#' + $(el).attr('data-orig-href').substr(2));
+        });
+        
+        $('a[data-orig-href^="#."]').each(function (i, el) {
+            $(el).attr('href', '#/' + firstLastHashNoParam + '.' + $(el).attr('data-orig-href').substr(2));
+        });
+    }
 
     // Inialization function
     function init() {
@@ -625,6 +656,7 @@ var BM = {};
                 var hash = window.location.hash.substr(2)
                 var q = '';
                 var h2 = '';
+                var first = '';
 
                 // Default for h is the first hash itself
                 var h = hash;
@@ -635,13 +667,16 @@ var BM = {};
                     h = hash.substr(0,h.search(/#/));
                 }
 
+                first = h;
+                firstLastHash = h;
+                
                 // Split the dot argument with the physical path
                 if (h.search(/\./) != -1) {
                     q = h.substr(h.search(/\./)+1);
                     h = h.substr(0,h.search(/\./));
                 }
 
-                if (firstLastHash == h) {
+                if (firstLastHashNoParam == h) {
                     // just the query is changed
                     if (lastParam != q) {
                         var current = nav.currentSubView;
@@ -655,12 +690,17 @@ var BM = {};
                         }
                         
                         for (;;) {
-                            current.afterParamLoad(arg);
+                            if (current.afterParamLoad) {
+                                current.afterParamLoad(arg);
+                            }
                             if(typeof current.parent == 'undefined') break;
                             current = current.parent;
                         }
 
                         lastParam = q;
+                        firstLastHash = first;
+                        
+                        fixHashModifier();
                         return;
                     }
                 }
@@ -671,7 +711,7 @@ var BM = {};
                     var gpaboxAj;
                     if (h2 != '') {
                         var popupSplit = h2.split('.');
-                        nav.openPopup(h, popupSplit);
+                        nav.openPopup(firstLastHash, popupSplit);
                     } else {
                         $F.popup.close();
                     }
@@ -700,7 +740,8 @@ var BM = {};
                     query: q
                 });
 
-                firstLastHash = h;
+                firstLastHashNoParam = h;
+                firstLastHash = first;
                 lastHash = newHash;
                 lastParam = q;
 
@@ -712,7 +753,7 @@ var BM = {};
 /** Pagination system for Formalhaut **/
 (function ($, $F) {
     "use strict";
-    
+
     var defaultPerPage = 20;
     var defaultDataSelector = '.datatable';
     var before = 'Page: ';
@@ -721,16 +762,16 @@ var BM = {};
         var length = 4;
         var rand = 'abcdefghijklmnopqrstuvwxyz';
         var className = '';
-        
+
         for(var i = 0; i < length; i++) {
             var c = Math.random();
             var r = rand[Math.floor(c * rand.length)];
             className += r;
         }
-        
+
         return className;
     })();
-    
+
     $F.pagination = function (option) {
         option = option || {};
         option.before = option.before || before;
@@ -739,7 +780,7 @@ var BM = {};
         option.url = option.url || null;
         option.nextPrevCount = option.nextPrevCount || defaultNextPrevCount;
         option.currentPage = option.currentPage || 1;
-        
+
         var element;
         if (option.element) {
             element = $(option.element);
@@ -750,9 +791,9 @@ var BM = {};
             } else {
                 // Attempt to auto generate pagination after a table
                 element = $('<div class="pagination"></div>').addClass('page-' + randomClassAppender);
-                
+
                 var defaultRel = $F.config.get('defaultRel');
-                
+
                 // Get all table in the default content element
                 var tab = $('#' + defaultRel + ' table');
                 if (tab.is(defaultDataSelector)) {
@@ -761,28 +802,28 @@ var BM = {};
                     // Only take the first table found
                     tab = tab.eq(0);
                 }
-                
+
                 if(tab.length === 0) {
                     var alertMsg = [];
                     alertMsg.push('Not found any table for pagination.');
                     alertMsg.push('Ensure you have at least one table or a table with "datatable" class name.');
-                    alertMsg.push('Alternatively, send the element you want to populate with pagination in "element" property.') 
+                    alertMsg.push('Alternatively, send the element you want to populate with pagination in "element" property.');
                     console.error(alertMsg.join('\n'));
                     return;
                 }
-                
+
                 tab.after(element);
             }
         }
-        
+
         // If the data is sent instead, count the data
         if (option.data && $.isArray(option.data)) {
-            option.dataCount = option.data.length; 
+            option.dataCount = option.data.length;
         }
-        
+
         if (option.url === null) {
             var split = $F.nav.getLastParam().split(/\//g);
-            if (split.length === 1 && split[0] === "") {
+            if (split.length === 1 && split[0] === '') {
                 option.url = "#.{page}";
             } else {
                 var pop = split[split.length - 1];
@@ -792,11 +833,11 @@ var BM = {};
                     split.pop();
                     split.push('{page}');
                 }
-                
-                option.url = '#.' + split.join('/'); 
+
+                option.url = '#.' + split.join('/');
             }
         }
-        
+
         var lastPage = Math.ceil(option.dataCount / option.perPage);
 
         element.html('');
@@ -804,29 +845,29 @@ var BM = {};
         element.append($('<a></a>').text('<<').attr('href', replacePage(option.url, 1)));
 
         if (option.currentPage > 1) {
-            element.append($('<a class="pageprev"></a>').text('<').attr('href', replacePage(option.url, option.currentPage - 1)));  
+            element.append($('<a class="pageprev"></a>').text('<').attr('href', replacePage(option.url, option.currentPage - 1)));
         }
-        
-        for (var i = option.currentPage - option.nextPrevCount; i <= option.currentPage + option.nextPrevCount; i++)
-        {
-            if(i < 1 || i > lastPage) {
+
+        for (var i = option.currentPage - option.nextPrevCount; i <= option.currentPage + option.nextPrevCount; i++) {
+            if (i < 1 || i > lastPage) {
                 continue;
             }
-            
+
             element.append($('<a></a>').text(i).attr('href', replacePage(option.url, i)));
         }
-        
+
         if (option.currentPage < lastPage) {
-            element.append($('<a class="pagenext"></a>').text('>').attr('href', replacePage(option.url, option.currentPage + 1)));   
+            element.append($('<a class="pagenext"></a>').text('>').attr('href', replacePage(option.url, option.currentPage + 1)));
         }
-        
+
         element.append($('<a></a>').text('>>').attr('href', replacePage(option.url, lastPage)));
-    }
-    
+    };
+
     function replacePage(base, num) {
         return base.replace('{page}', num);
     }
-})(jQuery, $F);/** Popup module for Formalhaut Engine * */
+})(jQuery, $F);
+/** Popup module for Formalhaut Engine * */
 (function($, $F) {
     "use strict";
 

@@ -5,6 +5,7 @@
     /** Private member **/
     var lastHash = '';
     var firstLastHash = '';
+    var firstLastHashNoParam = '';
     var secondLastHash = '';
     var lastParam = '';
     var isFirstLoad = true;
@@ -165,8 +166,10 @@
     };
 
     nav.getHTML = function getHTML(q) {
-        if (executionStack.length == 0)
+        if (executionStack.length == 0) {
+            fixHashModifier();
             return;
+        }
 
         var stack = executionStack.pop();
         var view = stack.script;
@@ -213,18 +216,22 @@
                 if (view.defaultChildView) {
                     history.replaceState(null, "", "#/" + view.defaultChildView);
                 }
+                
+                prepareHashModifier();
+                
                 return;
             }
-
+            
             nav.getHTML(q);
         });
     };
 
-    nav.openPopup = function openPopup(base, arg) {
-        $.getScript('view/' + base +'/' + arg[0] + '.js', function () {
+    nav.openPopup = function openPopup(firstHash, arg) {
+        var base = firstHash.split('.');
+        $.getScript('view/' + base[0] +'/' + arg[0] + '.js', function () {
             var popup = $F.compat.popupSubViewInit(nav.subView);
 
-            $.get('view/' + base + '/' + arg[0] + '.html', function (data) {
+            $.get('view/' + base[0] + '/' + arg[0] + '.html', function (data) {
                 $F.popup.show({
                     content: data,
                     scrolling: 'no',
@@ -279,6 +286,30 @@
     $F.loadView = function loadView(obj) {
         nav.subView = obj;
     };
+    
+    function prepareHashModifier() {
+        // Search the link that use the modifier hash
+        $('a[href^="##"]').each(function (i, el) {
+            $(el).attr('data-orig-href', $(el).attr('href'));
+        });
+        
+        // Search and proceed argument hash shorthand
+        $('a[href^="#."]').each(function (i, el) {
+            $(el).attr('data-orig-href', $(el).attr('href'));
+        });
+        
+        fixHashModifier();
+    }
+    
+    function fixHashModifier() {
+        $('a[data-orig-href^="##"]').each(function (i, el) {
+            $(el).attr('href', '#/' + firstLastHash + '#' + $(el).attr('data-orig-href').substr(2));
+        });
+        
+        $('a[data-orig-href^="#."]').each(function (i, el) {
+            $(el).attr('href', '#/' + firstLastHashNoParam + '.' + $(el).attr('data-orig-href').substr(2));
+        });
+    }
 
     // Inialization function
     function init() {
@@ -299,6 +330,7 @@
                 var hash = window.location.hash.substr(2)
                 var q = '';
                 var h2 = '';
+                var first = '';
 
                 // Default for h is the first hash itself
                 var h = hash;
@@ -309,13 +341,16 @@
                     h = hash.substr(0,h.search(/#/));
                 }
 
+                first = h;
+                firstLastHash = h;
+                
                 // Split the dot argument with the physical path
                 if (h.search(/\./) != -1) {
                     q = h.substr(h.search(/\./)+1);
                     h = h.substr(0,h.search(/\./));
                 }
 
-                if (firstLastHash == h) {
+                if (firstLastHashNoParam == h) {
                     // just the query is changed
                     if (lastParam != q) {
                         var current = nav.currentSubView;
@@ -329,12 +364,17 @@
                         }
                         
                         for (;;) {
-                            current.afterParamLoad(arg);
+                            if (current.afterParamLoad) {
+                                current.afterParamLoad(arg);
+                            }
                             if(typeof current.parent == 'undefined') break;
                             current = current.parent;
                         }
 
                         lastParam = q;
+                        firstLastHash = first;
+                        
+                        fixHashModifier();
                         return;
                     }
                 }
@@ -345,7 +385,7 @@
                     var gpaboxAj;
                     if (h2 != '') {
                         var popupSplit = h2.split('.');
-                        nav.openPopup(h, popupSplit);
+                        nav.openPopup(firstLastHash, popupSplit);
                     } else {
                         $F.popup.close();
                     }
@@ -374,7 +414,8 @@
                     query: q
                 });
 
-                firstLastHash = h;
+                firstLastHashNoParam = h;
+                firstLastHash = first;
                 lastHash = newHash;
                 lastParam = q;
 
