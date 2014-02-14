@@ -563,7 +563,7 @@ var BM = {};
                     scrolling: 'no',
                     autoExpand: true,
                     afterClose: function () {
-                        location.hash = '#/' + base;
+                        location.hash = '#/' + firstHash;
                     }
                 });
 
@@ -700,7 +700,7 @@ var BM = {};
                         lastParam = q;
                         firstLastHash = first;
                         
-                        fixHashModifier();
+                        prepareHashModifier();
                         return;
                     }
                 }
@@ -775,11 +775,11 @@ var BM = {};
     $F.pagination = function (option) {
         option = option || {};
         option.before = option.before || before;
-        option.dataCount = option.dataCount || 1;
-        option.perPage = option.perPage || defaultPerPage;
+        option.dataCount = parseInt(option.dataCount || 1);
+        option.perPage = parseInt(option.perPage || defaultPerPage);
         option.url = option.url || null;
-        option.nextPrevCount = option.nextPrevCount || defaultNextPrevCount;
-        option.currentPage = option.currentPage || 1;
+        option.nextPrevCount = parseInt(option.nextPrevCount || defaultNextPrevCount);
+        option.currentPage = parseInt(option.currentPage || 1);
 
         var element;
         if (option.element) {
@@ -852,7 +852,7 @@ var BM = {};
             if (i < 1 || i > lastPage) {
                 continue;
             }
-
+            
             element.append($('<a></a>').text(i).attr('href', replacePage(option.url, i)));
         }
 

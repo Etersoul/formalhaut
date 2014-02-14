@@ -237,7 +237,7 @@
                     scrolling: 'no',
                     autoExpand: true,
                     afterClose: function () {
-                        location.hash = '#/' + base;
+                        location.hash = '#/' + firstHash;
                     }
                 });
 
@@ -374,7 +374,7 @@
                         lastParam = q;
                         firstLastHash = first;
                         
-                        fixHashModifier();
+                        prepareHashModifier();
                         return;
                     }
                 }
