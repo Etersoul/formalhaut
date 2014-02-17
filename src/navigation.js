@@ -215,6 +215,7 @@
                 
                 if (view.defaultChildView) {
                     history.replaceState(null, "", "#/" + view.defaultChildView);
+                    $(window).trigger('hashchange');
                 }
                 
                 prepareHashModifier();
