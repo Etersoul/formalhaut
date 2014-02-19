@@ -167,7 +167,7 @@
 
     nav.getHTML = function getHTML(q) {
         if (executionStack.length == 0) {
-            fixHashModifier();
+            $F.nav.fixHashModifier();
             return;
         }
 
@@ -218,7 +218,7 @@
                     $(window).trigger('hashchange');
                 }
                 
-                prepareHashModifier();
+                $F.nav.prepareHashModifier();
                 
                 return;
             }
@@ -287,31 +287,35 @@
     $F.loadView = function loadView(obj) {
         nav.subView = obj;
     };
+
+    $F.nav.fixHashModifier = function fixHashModifier(selector) {
+        selector = selector || null;
+        
+        $('a[data-orig-href^="##"]', selector).each(function (i, el) {
+            $(el).attr('href', '#/' + firstLastHash + '#' + $(el).attr('data-orig-href').substr(2));
+        });
+        
+        $('a[data-orig-href^="#."]', selector).each(function (i, el) {
+            $(el).attr('href', '#/' + firstLastHashNoParam + '.' + $(el).attr('data-orig-href').substr(2));
+        });
+    }
     
-    function prepareHashModifier() {
+    $F.nav.prepareHashModifier = function prepareHashModifier(selector) {
+        selector = selector || null;
+        
         // Search the link that use the modifier hash
-        $('a[href^="##"]').each(function (i, el) {
+        $('a[href^="##"]', selector).each(function (i, el) {
             $(el).attr('data-orig-href', $(el).attr('href'));
         });
         
         // Search and proceed argument hash shorthand
-        $('a[href^="#."]').each(function (i, el) {
+        $('a[href^="#."]', selector).each(function (i, el) {
             $(el).attr('data-orig-href', $(el).attr('href'));
         });
         
-        fixHashModifier();
+        $F.nav.fixHashModifier(selector);
     }
     
-    function fixHashModifier() {
-        $('a[data-orig-href^="##"]').each(function (i, el) {
-            $(el).attr('href', '#/' + firstLastHash + '#' + $(el).attr('data-orig-href').substr(2));
-        });
-        
-        $('a[data-orig-href^="#."]').each(function (i, el) {
-            $(el).attr('href', '#/' + firstLastHashNoParam + '.' + $(el).attr('data-orig-href').substr(2));
-        });
-    }
-
     // Inialization function
     function init() {
         $(window).on('hashchange', function () {
@@ -375,7 +379,7 @@
                         lastParam = q;
                         firstLastHash = first;
                         
-                        prepareHashModifier();
+                        $F.nav.prepareHashModifier();
                         return;
                     }
                 }

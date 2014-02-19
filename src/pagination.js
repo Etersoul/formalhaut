@@ -109,6 +109,7 @@
         }
 
         element.append($('<a></a>').text('>>').attr('href', replacePage(option.url, lastPage)));
+        $F.nav.prepareHashModifier(element);
     };
 
     function replacePage(base, num) {
