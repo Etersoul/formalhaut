@@ -6,11 +6,15 @@
         returnStringify = (returnStringify == null) ? false : returnStringify;
         
         var json = {};
-        jQuery.map($(selector).serializeArray(), function(n, i){
-            if(typeof json[n.name] == 'undefined') {
-                json[n.name] = n.value;
+        jQuery.map($(selector).serializeArray(), function (n, i) {
+            if (typeof json[n.name] == 'undefined') {
+                if (/\[\]$/.test(n.name)) {
+                    json[n.name] = [n.value];
+                } else {
+                    json[n.name] = n.value;
+                }
             } else {
-                if(typeof json[n.name] == 'object') {
+                if (typeof json[n.name] == 'object') {
                     json[n.name].push(n.value);
                 } else {
                     var temp = json[n.name];
