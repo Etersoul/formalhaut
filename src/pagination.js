@@ -111,6 +111,14 @@
         element.append($('<a></a>').text('>>').attr('href', replacePage(option.url, lastPage)));
         $F.nav.prepareHashModifier(element);
     };
+    
+    $F.pagination.getClass = function () {
+        return randomClassAppender;
+    };
+    
+    $F.pagination.getElement = function () {
+        return $('.page-' + randomClassAppender);
+    };
 
     function replacePage(base, num) {
         return base.replace('{page}', num);
