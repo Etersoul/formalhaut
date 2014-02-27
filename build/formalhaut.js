@@ -1089,18 +1089,19 @@ var BM = {};
         
         var json = {};
         jQuery.map($(selector).serializeArray(), function (n, i) {
-            if (typeof json[n.name] == 'undefined') {
+            var cleanName = n.name.replace(/\[\]$/, '');
+            if (typeof json[cleanName] == 'undefined') {
                 if (/\[\]$/.test(n.name)) {
-                    json[n.name] = [n.value];
+                    json[cleanName] = [n.value];
                 } else {
-                    json[n.name] = n.value;
+                    json[cleanName] = n.value;
                 }
             } else {
-                if (typeof json[n.name] == 'object') {
-                    json[n.name].push(n.value);
+                if (typeof json[cleanName] == 'object') {
+                    json[cleanName].push(n.value);
                 } else {
-                    var temp = json[n.name];
-                    json[n.name] = [temp, n.value];
+                    var temp = json[cleanName];
+                    json[cleanName] = [temp, n.value];
                 }
             }
         });
