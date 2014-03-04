@@ -72,28 +72,44 @@
     };
     
     $F.format.number = function (number) {
+        return $F.format.customNumber(number, '.', ',', ',', '.');  
+    };
+    
+    $F.format.customNumber = function (number, commaFrom, thousandFrom, commaTo, thousandTo) {
+        commaFrom = commaFrom || '.';
+        thousandFrom = thousandFrom || ',';
+        commaTo = commaTo || commaFrom;
+        thousandTo = thousandTo || thousandFrom;
+        
         if (number == null) {
             return number;
         }
         
         var num = number.toString();
-        if (/^-?[0-9.]*(,[0-9]*)?$/.test(num)) {
-            num = num.replace(/\./g,'').split(',');
+        
+        if (new RegExp("^-?[0-9" + thousandFrom + "]*(" + commaFrom + "[0-9]*)?$").test(num)) {
+            num = num.replace(thousandFrom, '').split(commaFrom);
             var s2 = '', dot = '';
-            while (num[0].length > 0){
-                if (num[0] == '-') {
-                    s2 = '-' + s2;
-                    break;
+            
+            if (num[0].length !== 0) {
+                while (num[0].length > 0){
+                    if (num[0] == '-') {
+                        s2 = '-' + s2;
+                        break;
+                    }
+                    
+                    s2 = num[0].substr((num[0].length - 3 >= 0 ? num[0].length - 3 : 0), 3) + dot + s2;
+                    dot = thousandTo;
+                    num[0] = num[0].substr(0, num[0].length - 3);
                 }
-                
-                s2 = num[0].substr((num[0].length - 3 >= 0 ? num[0].length - 3 : 0), 3) + dot + s2;
-                dot = '.';
-                num[0] = num[0].substr(0, num[0].length - 3);
+            } else {
+                s2 = '0';
             }
             
             if (num.length > 1) {
-                s2 += ',' + num[1];
+                s2 += commaTo + num[1];
             }
+            
             num = s2;
         }
         
