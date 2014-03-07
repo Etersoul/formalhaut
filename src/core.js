@@ -10,7 +10,7 @@ var $F = ($F) ? $F : null;
         if (!$ && $.fn.jQuery.split('.')[0] != '1' && parseInt($.fn.jQuery.split('.')[1]) < 10) {
             console.error('Formalhaut JS engine needs jQuery 1.10');
         }
-        
+
         if ($F !== null) {
             return;
         } else {
@@ -20,11 +20,11 @@ var $F = ($F) ? $F : null;
 
     function initF() {
         var config = {};
-        
+
         var build = function () {
-        
+
         };
-        
+
         // Move global window to $F.window. In short, no DOM accessing global variable allowed.
         build.window = window;
 
@@ -42,10 +42,10 @@ var $F = ($F) ? $F : null;
                         data = {};
                         data.status = '200';
                         data.data = oldData;
-                        
+
                         console.warn('Using the old service payload style. Please move to the new service style');
                     }
-                    
+
                     opt.success(data.data, data.status);
                 },
                 complete: opt.complete || null,
@@ -75,11 +75,16 @@ var $F = ($F) ? $F : null;
                 complete: onComplete
             });
         };
-        
+
         /** Shorthand of $F.ajax with URL that have been prepended with serviceUri **/
         build.service = function (data) {
             data.url = $F.config.get('serviceUri') + data.url;
-            return build.ajax(data);
+            var ret = build.ajax(data);
+            ret.done(function () {
+                console.log('done');
+                $F.nav.fixHashModifier();
+            });
+            return ret;
         };
 
         build.logError = function (err) {
@@ -93,7 +98,7 @@ var $F = ($F) ? $F : null;
         build.hook = function (func) {
 
         };
-        
+
         build.help = function () {
             var arr = [];
             for (var i in build) {
@@ -101,7 +106,7 @@ var $F = ($F) ? $F : null;
                     arr.push(i + '()');
                 }
             }
-            
+
             console.info(arr.join(', '));
         };
 
