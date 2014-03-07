@@ -48,7 +48,13 @@ var $F = ($F) ? $F : null;
 
                     opt.success(data.data, data.status);
                 },
-                complete: opt.complete || null,
+                complete: function () {
+                    if (opt.complete) {
+                        opt.complete.apply(this, arguments);
+                    }
+
+                    $F.nav.prepareHashModifier();
+                },
                 error: function (data) {
                     if (data.status === 401) {
                         location.href = $F.config.get('loginUri');
@@ -80,10 +86,6 @@ var $F = ($F) ? $F : null;
         build.service = function (data) {
             data.url = $F.config.get('serviceUri') + data.url;
             var ret = build.ajax(data);
-            ret.done(function () {
-                console.log('done');
-                $F.nav.fixHashModifier();
-            });
             return ret;
         };
 
