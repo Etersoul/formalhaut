@@ -4,7 +4,14 @@ var $F = ($F) ? $F : null;
 (function ($) {
     "use strict";
 
+    var ajaxRequest = 0,
+        processedRequest = 0,
+        startRequest = 0;
     checkF();
+
+    $(window).ready(function() {
+        initBar();
+    });
 
     function checkF() {
         if (!$ && $.fn.jQuery.split('.')[0] != '1' && parseInt($.fn.jQuery.split('.')[1]) < 10) {
@@ -29,6 +36,11 @@ var $F = ($F) ? $F : null;
         build.window = window;
 
         build.ajax = function (opt) {
+            ++ajaxRequest;
+            if (!showLoadBar) {
+                loadBar();
+            }
+
             return $.ajax({
                 url: opt.url,
                 data: opt.data || {},
@@ -49,6 +61,7 @@ var $F = ($F) ? $F : null;
                     opt.success(data.data, data.status);
                 },
                 complete: function () {
+                    ++processedRequest;
                     if (opt.complete) {
                         opt.complete.apply(this, arguments);
                     }
@@ -119,4 +132,70 @@ var $F = ($F) ? $F : null;
         location.href = message;
     }
 
+    function initBar() {
+        $('body').append($('<div id="loading-bar"></div>').css({
+            background: '#00f',
+            display: 'none',
+            height: '2px',
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            boxShadow: '2px 2px 2px #000'
+        }));
+    }
+
+    var barTimeout = 20;
+    var barClearTimeout;
+    var maxAnimation = 20;
+    var curAnimation = 0;
+    var curProcessedRequest = 0;
+    var showLoadBar = false;
+    function loadBar() {
+        showLoadBar = true;
+        var w = $(window).width();
+
+        if (curProcessedRequest !== processedRequest) {
+            curAnimation = 0;
+            curProcessedRequest = processedRequest;
+        }
+
+        if (curAnimation <= maxAnimation) {
+            ++curAnimation;
+        }
+
+        if (processedRequest >= ajaxRequest) {
+            barTimeout--;
+
+            // Reset the timeout
+            if (barTimeout == 0) {
+                barTimeout = 20;
+                processedRequest = 0;
+                ajaxRequest = 0;
+                barClearTimeout = 20;
+                clearBar();
+                return;
+            }
+        } else {
+            w = ((processedRequest / ajaxRequest) * w) + ((curAnimation / maxAnimation) * ((1 / ajaxRequest) * w * (3/5)));
+            $('#loading-bar').show().width(w);
+            barTimeout = 10;
+        }
+
+        setTimeout(loadBar, 50);
+    }
+
+    function clearBar() {
+        var w = $(window).width();
+        $('#loading-bar').width(w);
+
+        --barClearTimeout;
+
+        if(barClearTimeout === 0) {
+            $('#loading-bar').fadeOut();
+            showLoadBar = false;
+            return;
+        }
+
+        setTimeout(clearBar, 50);
+    }
 })(jQuery);
