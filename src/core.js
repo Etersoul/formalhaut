@@ -134,12 +134,13 @@ var $F = ($F) ? $F : null;
 
     function initBar() {
         $('body').append($('<div id="loading-bar"></div>').css({
-            background: '#00f',
+            background: 'rgba(255, 255, 0, 0.8)',
             display: 'none',
             height: '2px',
             position: 'fixed',
-            top: 0,
-            left: 0,
+            top: '0',
+            left: '-2px',
+            zIndex: '11999',
             boxShadow: '2px 2px 2px #000'
         }));
     }
@@ -176,7 +177,7 @@ var $F = ($F) ? $F : null;
                 return;
             }
         } else {
-            w = ((processedRequest / ajaxRequest) * w) + ((curAnimation / maxAnimation) * ((1 / ajaxRequest) * w * (3/5)));
+            w = ((processedRequest / ajaxRequest) * w) + ((curAnimation / maxAnimation) * ((1 / ajaxRequest) * w * (3/5))) + 2;
             $('#loading-bar').show().width(w);
             barTimeout = 10;
         }

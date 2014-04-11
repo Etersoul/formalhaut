@@ -134,12 +134,13 @@ var $F = ($F) ? $F : null;
 
     function initBar() {
         $('body').append($('<div id="loading-bar"></div>').css({
-            background: '#00f',
+            background: 'rgba(255, 255, 0, 0.8)',
             display: 'none',
             height: '2px',
             position: 'fixed',
-            top: 0,
-            left: 0,
+            top: '0',
+            left: '-2px',
+            zIndex: '11999',
             boxShadow: '2px 2px 2px #000'
         }));
     }
@@ -176,7 +177,7 @@ var $F = ($F) ? $F : null;
                 return;
             }
         } else {
-            w = ((processedRequest / ajaxRequest) * w) + ((curAnimation / maxAnimation) * ((1 / ajaxRequest) * w * (3/5)));
+            w = ((processedRequest / ajaxRequest) * w) + ((curAnimation / maxAnimation) * ((1 / ajaxRequest) * w * (3/5))) + 2;
             $('#loading-bar').show().width(w);
             barTimeout = 10;
         }
@@ -456,12 +457,12 @@ var BM = {};
 
     /** Public Function **/
     $F.nav = {};
-    
+
     // Get current hash in the URL
     $F.nav.getCurrentHash = function getCurrentHash() {
         return location.hash;
     };
-    
+
     // Get last hash
     $F.nav.getLastHash = function getLashHash(breakHash) {
         if (breakHash) {
@@ -471,15 +472,15 @@ var BM = {};
                 second: hash[1]
             };
         }
-        
+
         return $F.nav.getLastHash();
     };
-    
+
     // Get first section of last hash
     $F.nav.getFirstLastHash = function getFirstLastHash() {
         return firstLastHash;
     };
-    
+
     // Get second section of last hash (argument)
     $F.nav.getLastParam = function getLastParam() {
         return lastParam;
@@ -528,7 +529,7 @@ var BM = {};
                     fullParam: opt.query,
                     param: []
                 };
-                
+
                 if (opt.query !== "") {
                     arg.param = opt.query.split('/');
                 }
@@ -555,7 +556,7 @@ var BM = {};
         getDebug($F.config.get('viewUri') + opt.hash + '.js', function () {
             // TODO: remove compatibility layer
             var view = $F.compat.subViewInit(nav.subView);
-            
+
             if(typeof view.isPopup !== 'undefined' && view.isPopup) {
                 console.warn('Accessing popup as a non-popup view.');
                 alert('Accessing popup as a non-popup view.');
@@ -620,37 +621,25 @@ var BM = {};
         }
 
         $('#' + rel).load($F.config.get('viewUri') + req + '.html', function () {
-            //onLoadedCommonFunction();
-            var qs = q.split('/');
-
-            // execute onLoaded script from the view's script
-            var arg = {
-                fullParam: q,
-                param: []
-            };
-            
-            if (q !== "") {
-                arg.param = qs;
-            }
-
-            view.afterLoad(arg);
+            var par = nav.splitParameter($F.nav.getCurrentHash());
+            view.afterLoad(par.arg);
 
             document.title = view.title;
             if (executionStack.length == 0) {
                 if (typeof view.onDefaultChild == 'function') {
-                    view.onDefaultChild(arg);
+                    view.onDefaultChild(par.arg);
                 }
-                
+
                 if (view.defaultChildView) {
                     history.replaceState(null, "", "#/" + view.defaultChildView);
                     $(window).trigger('hashchange');
                 }
-                
+
                 $F.nav.prepareHashModifier();
-                
+
                 return;
             }
-            
+
             nav.getHTML(q);
         });
     };
@@ -674,9 +663,9 @@ var BM = {};
                     if (!popup.isPopup) {
                         console.warn('Trying to access non-popup enabled view.');
                     }
-                    
+
                     popup.closePopup = nav.closePopup;
-                    
+
                     var arg2 = {
                         fullParam: '',
                         param: []
@@ -684,12 +673,12 @@ var BM = {};
 
                     if (arg.length > 1) {
                         arg2.fullParam = arg[1];
-                        
+
                         if (arg2.fullParam !== "") {
                             arg2.param = arg[1].split('/');
                         }
                     }
-                    
+
                     popup.parent = nav.currentSubView;
 
                     popup.afterLoad(arg2);
@@ -697,7 +686,7 @@ var BM = {};
             }, 'html');
         });
     };
-    
+
     nav.closePopup = function closePopup() {
         $F.nav.setLocation('#/' + firstLastHash);
         $F.popup.close();
@@ -709,6 +698,56 @@ var BM = {};
         callback();
     };
 
+    nav.splitParameter = function splitParameter(url) {
+        var q = '',
+            h = url,
+            paramType = 0;
+
+        // Split the question mark argument from the physical path
+        if (url.search(/\?/) !== -1) {
+            q = url.substr(url.search(/\?/) + 1);
+            h = url.substr(0, url.search(/\?/));
+            paramType = 2;
+        }
+
+        // Split the dot argument from the physical path
+        if (url.search(/\./) !== -1) {
+            var search = url.search(/\./);
+            q = url.substr(search + 1);
+            h = url.substr(0, search);
+            paramType = 1;
+        }
+
+        var arg = {
+            fullParam: q,
+            param: [],
+            namedParam: null
+        };
+
+        if (q !== "") {
+            if (paramType == 1) { // 0 no param, 1 for dot based, 2 for question mark based
+                arg.param = q.split('/');
+            } else {
+                arg.param = q.split('&');
+                arg.namedParam = {};
+                for (var i = 0; i < arg.param.length; i++) {
+                    var argi = arg.param[i];
+                    var search = argi.search('=');
+                    var val = argi.substr(search + 1);
+                    var key = argi.substr(0, search);
+                    arg.namedParam[key] = val;
+                }
+            }
+        }
+
+        return {
+            query: q,
+            hash: h,
+            paramType: paramType,
+            arg: arg
+        };
+    }
+
     /******** Formalhaut Engine Hook *********/
 
     // new way to load view script
@@ -718,32 +757,32 @@ var BM = {};
 
     $F.nav.fixHashModifier = function fixHashModifier(selector) {
         selector = selector || null;
-        
+
         $('a[data-orig-href^="##"]', selector).each(function (i, el) {
             $(el).attr('href', '#/' + firstLastHash + '#' + $(el).attr('data-orig-href').substr(2));
         });
-        
+
         $('a[data-orig-href^="#."]', selector).each(function (i, el) {
             $(el).attr('href', '#/' + firstLastHashNoParam + '.' + $(el).attr('data-orig-href').substr(2));
         });
     }
-    
+
     $F.nav.prepareHashModifier = function prepareHashModifier(selector) {
         selector = selector || null;
-        
+
         // Search the link that use the modifier hash
         $('a[href^="##"]', selector).each(function (i, el) {
             $(el).attr('data-orig-href', $(el).attr('href'));
         });
-        
+
         // Search and proceed argument hash shorthand
         $('a[href^="#."]', selector).each(function (i, el) {
             $(el).attr('data-orig-href', $(el).attr('href'));
         });
-        
+
         $F.nav.fixHashModifier(selector);
     }
-    
+
     // Inialization function
     function init() {
         $(window).on('hashchange', function () {
@@ -751,17 +790,16 @@ var BM = {};
             if (window.location.hash.substr(0, 2) === '##') {
                 window.history.replaceState(null, "", '#/' + firstLastHash + '#' + window.location.hash.substr(2));
             }
-            
+
             // Proceed argument hash shorthand
             if (window.location.hash.substr(0, 2) === '#.') {
-                window.history.replaceState(null, "", '#/' + firstLastHash + '.' + window.location.hash.substr(2)); 
+                window.history.replaceState(null, "", '#/' + firstLastHash + '.' + window.location.hash.substr(2));
             }
-            
+
             // Proceed primary hash
             if (window.location.hash.substr(0, 2) === '#/') {
                 var newHash = window.location.hash;
                 var hash = window.location.hash.substr(2)
-                var q = '';
                 var h2 = '';
                 var first = '';
 
@@ -776,37 +814,25 @@ var BM = {};
 
                 first = h;
                 firstLastHash = h;
-                
-                // Split the dot argument with the physical path
-                if (h.search(/\./) != -1) {
-                    q = h.substr(h.search(/\./)+1);
-                    h = h.substr(0,h.search(/\./));
-                }
 
-                if (firstLastHashNoParam == h) {
+                var proc = nav.splitParameter(h);
+
+                if (firstLastHashNoParam == proc.hash) {
                     // just the query is changed
-                    if (lastParam != q) {
+                    if (lastParam != proc.query) {
                         var current = nav.currentSubView;
-                        var arg = {
-                            fullParam: q,
-                            param: []
-                        };
-                        
-                        if (q !== "") {
-                            arg.param = q.split('/');
-                        }
-                        
+
                         for (;;) {
                             if (current.afterParamLoad) {
-                                current.afterParamLoad(arg);
+                                current.afterParamLoad(proc.arg);
                             }
                             if(typeof current.parent == 'undefined') break;
                             current = current.parent;
                         }
 
-                        lastParam = q;
+                        lastParam = proc.query;
                         firstLastHash = first;
-                        
+
                         $F.nav.prepareHashModifier();
                         return;
                     }
@@ -822,6 +848,7 @@ var BM = {};
                     } else {
                         $F.popup.close();
                     }
+
                     secondLastHash = h2;
 
                     if (!isFirstLoad) {
@@ -832,10 +859,10 @@ var BM = {};
                 isFirstLoad = false;
 
                 // Cut the physical path data to the array
-                var pathArray = h.split(/\//g);
+                var pathArray = proc.hash.split(/\//g);
 
                 // if we go to the ancestor path, invalidate last path data and stack
-                if(firstLastHash.indexOf(h) == 0) {
+                if(firstLastHash.indexOf(proc.hash) == 0) {
                     firstLastHash = '';
                     executionStack = [];
                 }
@@ -843,16 +870,16 @@ var BM = {};
                 var i=0;
                 nav.getScript({
                     hashList: pathArray,
-                    hash: h,
-                    query: q
+                    hash: proc.hash,
+                    query: proc.query
                 });
 
-                firstLastHashNoParam = h;
+                firstLastHashNoParam = proc.hash;
                 firstLastHash = first;
                 lastHash = newHash;
-                lastParam = q;
+                lastParam = proc.query;
 
-                $('a').off('click', nav.anchorBind).on('click', nav.anchorBind);
+                $('a').off('click.commonnav', nav.anchorBind).on('click.commonnav', nav.anchorBind);
             }
         });
     }
