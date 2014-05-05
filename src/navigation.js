@@ -90,7 +90,9 @@
                     var l = scriptStack[scriptStack.length - 1].req;
 
                     // if the stack string length is less than the current iteration hash string length, stop because the result will always no
-                    if (l.length < opt.hash.length || l == opt.hash) break;
+                    if (l.length < opt.hash.length || l == opt.hash) {
+                        break;
+                    }
 
                     scriptStack.pop();
                 }
@@ -215,7 +217,9 @@
         });
     };
 
-    nav.openPopup = function openPopup(firstHash, arg) {
+    nav.openPopup = function openPopup(firstHash, arg, fullFirstHash) {
+        fullFirstHash = fullFirstHash || firstHash;
+
         var base = firstHash.split('.');
         $.getScript('view/' + base[0] +'/' + arg[0] + '.js', function () {
             var popup = $F.compat.popupSubViewInit(nav.subView);
@@ -226,7 +230,7 @@
                     scrolling: 'no',
                     autoExpand: true,
                     afterClose: function () {
-                        location.hash = '#/' + firstHash;
+                        location.hash = '#/' + fullFirstHash;
                     }
                 });
 
@@ -292,7 +296,7 @@
         var arg = {
             fullParam: q,
             param: [],
-            namedParam: null
+            namedParam: {}
         };
 
         if (q !== "") {
@@ -317,7 +321,7 @@
             paramType: paramType,
             arg: arg
         };
-    }
+    };
 
     /******** Formalhaut Engine Hook *********/
 
@@ -336,7 +340,7 @@
         $('a[data-orig-href^="#."]', selector).each(function (i, el) {
             $(el).attr('href', '#/' + firstLastHashNoParam + '.' + $(el).attr('data-orig-href').substr(2));
         });
-    }
+    };
 
     $F.nav.prepareHashModifier = function prepareHashModifier(selector) {
         selector = selector || null;
@@ -352,7 +356,7 @@
         });
 
         $F.nav.fixHashModifier(selector);
-    }
+    };
 
     // Inialization function
     function init() {
@@ -370,7 +374,7 @@
             // Proceed primary hash
             if (window.location.hash.substr(0, 2) === '#/') {
                 var newHash = window.location.hash;
-                var hash = window.location.hash.substr(2)
+                var hash = window.location.hash.substr(2);
                 var h2 = '';
                 var first = '';
 
@@ -379,8 +383,8 @@
 
                 // get second hash
                 if (h.search(/#/) != -1) {
-                    h2 = hash.substr(h.search(/#/)+1);
-                    h = hash.substr(0,h.search(/#/));
+                    h2 = hash.substr(h.search(/#/) + 1);
+                    h = hash.substr(0, h.search(/#/));
                 }
 
                 first = h;
@@ -397,7 +401,9 @@
                             if (current.afterParamLoad) {
                                 current.afterParamLoad(proc.arg);
                             }
-                            if(typeof current.parent == 'undefined') break;
+                            if(typeof current.parent == 'undefined') {
+                                break;
+                            }
                             current = current.parent;
                         }
 
@@ -412,10 +418,12 @@
                 // check if second hash changed
                 if (secondLastHash != h2) {
                     // show the popup
-                    var gpaboxAj;
                     if (h2 != '') {
                         var popupSplit = h2.split('.');
-                        nav.openPopup(firstLastHash, popupSplit);
+
+                        // Clean the ? from the hash path
+                        var clearFirstLashHash = firstLastHash.split('?');
+                        nav.openPopup(clearFirstLashHash[0], popupSplit, firstLastHash);
                     } else {
                         $F.popup.close();
                     }
@@ -438,7 +446,6 @@
                     executionStack = [];
                 }
 
-                var i=0;
                 nav.getScript({
                     hashList: pathArray,
                     hash: proc.hash,
