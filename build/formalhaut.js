@@ -4,9 +4,16 @@ var $F = ($F) ? $F : null;
 (function ($) {
     "use strict";
 
-    var ajaxRequest = 0,
-        processedRequest = 0,
-        startRequest = 0;
+    var ajaxRequest = 0;
+    var processedRequest = 0;
+    var startRequest = 0;
+    var barTimeout = 20;
+    var barClearTimeout;
+    var maxAnimation = 20;
+    var curAnimation = 0;
+    var curProcessedRequest = 0;
+    var showLoadBar = false;
+
     checkF();
 
     $(window).ready(function() {
@@ -145,12 +152,6 @@ var $F = ($F) ? $F : null;
         }));
     }
 
-    var barTimeout = 20;
-    var barClearTimeout;
-    var maxAnimation = 20;
-    var curAnimation = 0;
-    var curProcessedRequest = 0;
-    var showLoadBar = false;
     function loadBar() {
         showLoadBar = true;
         var w = $(window).width();
@@ -432,7 +433,6 @@ var BM = {};
     "use strict";
 
     /** Private member **/
-    var lastHash = '';
     var firstLastHash = '';
     var firstLastHashNoParam = '';
     var secondLastHash = '';
@@ -623,7 +623,7 @@ var BM = {};
         }
 
         $('#' + rel).load($F.config.get('viewUri') + req + '.html', function () {
-            var par = nav.splitParameter($F.nav.getCurrentHash());
+            var par = nav.splitParameter($F.nav.getCurrentHash().substr(2));
             view.afterLoad(par.arg);
 
             document.title = view.title;
@@ -703,6 +703,9 @@ var BM = {};
     };
 
     nav.splitParameter = function splitParameter(url) {
+        // Wipe out all the second hashes since they are not the part of parameter
+        url = url.split('#')[0];
+
         var q = '',
             h = url,
             paramType = 0;
@@ -802,7 +805,6 @@ var BM = {};
 
             // Proceed primary hash
             if (window.location.hash.substr(0, 2) === '#/') {
-                var newHash = window.location.hash;
                 var hash = window.location.hash.substr(2);
                 var h2 = '';
                 var first = '';
@@ -883,7 +885,6 @@ var BM = {};
 
                 firstLastHashNoParam = proc.hash;
                 firstLastHash = first;
-                lastHash = newHash;
                 lastParam = proc.query;
 
                 $('a').off('click.commonnav', nav.anchorBind).on('click.commonnav', nav.anchorBind);

@@ -3,7 +3,6 @@
     "use strict";
 
     /** Private member **/
-    var lastHash = '';
     var firstLastHash = '';
     var firstLastHashNoParam = '';
     var secondLastHash = '';
@@ -194,7 +193,7 @@
         }
 
         $('#' + rel).load($F.config.get('viewUri') + req + '.html', function () {
-            var par = nav.splitParameter($F.nav.getCurrentHash());
+            var par = nav.splitParameter($F.nav.getCurrentHash().substr(2));
             view.afterLoad(par.arg);
 
             document.title = view.title;
@@ -274,6 +273,9 @@
     };
 
     nav.splitParameter = function splitParameter(url) {
+        // Wipe out all the second hashes since they are not the part of parameter
+        url = url.split('#')[0];
+
         var q = '',
             h = url,
             paramType = 0;
@@ -373,7 +375,6 @@
 
             // Proceed primary hash
             if (window.location.hash.substr(0, 2) === '#/') {
-                var newHash = window.location.hash;
                 var hash = window.location.hash.substr(2);
                 var h2 = '';
                 var first = '';
@@ -454,7 +455,6 @@
 
                 firstLastHashNoParam = proc.hash;
                 firstLastHash = first;
-                lastHash = newHash;
                 lastParam = proc.query;
 
                 $('a').off('click.commonnav', nav.anchorBind).on('click.commonnav', nav.anchorBind);

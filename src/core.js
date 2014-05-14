@@ -4,9 +4,15 @@ var $F = ($F) ? $F : null;
 (function ($) {
     "use strict";
 
-    var ajaxRequest = 0,
-        processedRequest = 0,
-        startRequest = 0;
+    var ajaxRequest = 0;
+    var processedRequest = 0;
+    var barTimeout = 20;
+    var barClearTimeout;
+    var maxAnimation = 20;
+    var curAnimation = 0;
+    var curProcessedRequest = 0;
+    var showLoadBar = false;
+
     checkF();
 
     $(window).ready(function() {
@@ -26,8 +32,6 @@ var $F = ($F) ? $F : null;
     }
 
     function initF() {
-        var config = {};
-
         var build = function () {
 
         };
@@ -145,12 +149,6 @@ var $F = ($F) ? $F : null;
         }));
     }
 
-    var barTimeout = 20;
-    var barClearTimeout;
-    var maxAnimation = 20;
-    var curAnimation = 0;
-    var curProcessedRequest = 0;
-    var showLoadBar = false;
     function loadBar() {
         showLoadBar = true;
         var w = $(window).width();
