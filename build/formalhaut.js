@@ -4,9 +4,16 @@ var $F = ($F) ? $F : null;
 (function ($) {
     "use strict";
 
-    var ajaxRequest = 0,
-        processedRequest = 0,
-        startRequest = 0;
+    var ajaxRequest = 0;
+    var processedRequest = 0;
+    var startRequest = 0;
+    var barTimeout = 20;
+    var barClearTimeout;
+    var maxAnimation = 20;
+    var curAnimation = 0;
+    var curProcessedRequest = 0;
+    var showLoadBar = false;
+
     checkF();
 
     $(window).ready(function() {
@@ -145,12 +152,6 @@ var $F = ($F) ? $F : null;
         }));
     }
 
-    var barTimeout = 20;
-    var barClearTimeout;
-    var maxAnimation = 20;
-    var curAnimation = 0;
-    var curProcessedRequest = 0;
-    var showLoadBar = false;
     function loadBar() {
         showLoadBar = true;
         var w = $(window).width();
@@ -432,7 +433,6 @@ var BM = {};
     "use strict";
 
     /** Private member **/
-    var lastHash = '';
     var firstLastHash = '';
     var firstLastHashNoParam = '';
     var secondLastHash = '';
@@ -531,7 +531,9 @@ var BM = {};
                     var l = scriptStack[scriptStack.length - 1].req;
 
                     // if the stack string length is less than the current iteration hash string length, stop because the result will always no
-                    if (l.length < opt.hash.length || l == opt.hash) break;
+                    if (l.length < opt.hash.length || l == opt.hash) {
+                        break;
+                    }
 
                     scriptStack.pop();
                 }
@@ -633,7 +635,7 @@ var BM = {};
         }
 
         $('#' + rel).load($F.config.get('viewUri') + req + '.html', function () {
-            var par = nav.splitParameter($F.nav.getCurrentHash());
+            var par = nav.splitParameter($F.nav.getCurrentHash().substr(2));
             view.afterLoad(par.arg);
 
             document.title = view.title;
@@ -656,7 +658,9 @@ var BM = {};
         });
     };
 
-    nav.openPopup = function openPopup(firstHash, arg) {
+    nav.openPopup = function openPopup(firstHash, arg, fullFirstHash) {
+        fullFirstHash = fullFirstHash || firstHash;
+
         var base = firstHash.split('.');
         $.getScript('view/' + base[0] +'/' + arg[0] + '.js', function () {
             var popup = $F.compat.popupSubViewInit(nav.subView);
@@ -667,7 +671,7 @@ var BM = {};
                     scrolling: 'no',
                     autoExpand: true,
                     afterClose: function () {
-                        location.hash = '#/' + firstHash;
+                        location.hash = '#/' + fullFirstHash;
                     }
                 });
 
@@ -711,6 +715,9 @@ var BM = {};
     };
 
     nav.splitParameter = function splitParameter(url) {
+        // Wipe out all the second hashes since they are not the part of parameter
+        url = url.split('#')[0];
+
         var q = '',
             h = url,
             paramType = 0;
@@ -733,7 +740,7 @@ var BM = {};
         var arg = {
             fullParam: q,
             param: [],
-            namedParam: null
+            namedParam: {}
         };
 
         if (q !== "") {
@@ -758,7 +765,7 @@ var BM = {};
             paramType: paramType,
             arg: arg
         };
-    }
+    };
 
     /******** Formalhaut Engine Hook *********/
 
@@ -777,7 +784,7 @@ var BM = {};
         $('a[data-orig-href^="#."]', selector).each(function (i, el) {
             $(el).attr('href', '#/' + firstLastHashNoParam + '.' + $(el).attr('data-orig-href').substr(2));
         });
-    }
+    };
 
     $F.nav.prepareHashModifier = function prepareHashModifier(selector) {
         selector = selector || null;
@@ -793,7 +800,7 @@ var BM = {};
         });
 
         $F.nav.fixHashModifier(selector);
-    }
+    };
 
     // Inialization function
     function init() {
@@ -810,8 +817,7 @@ var BM = {};
 
             // Proceed primary hash
             if (window.location.hash.substr(0, 2) === '#/') {
-                var newHash = window.location.hash;
-                var hash = window.location.hash.substr(2)
+                var hash = window.location.hash.substr(2);
                 var h2 = '';
                 var first = '';
 
@@ -820,8 +826,8 @@ var BM = {};
 
                 // get second hash
                 if (h.search(/#/) != -1) {
-                    h2 = hash.substr(h.search(/#/)+1);
-                    h = hash.substr(0,h.search(/#/));
+                    h2 = hash.substr(h.search(/#/) + 1);
+                    h = hash.substr(0, h.search(/#/));
                 }
 
                 first = h;
@@ -838,7 +844,9 @@ var BM = {};
                             if (current.afterParamLoad) {
                                 current.afterParamLoad(proc.arg);
                             }
-                            if(typeof current.parent == 'undefined') break;
+                            if(typeof current.parent == 'undefined') {
+                                break;
+                            }
                             current = current.parent;
                         }
 
@@ -853,10 +861,12 @@ var BM = {};
                 // check if second hash changed
                 if (secondLastHash != h2) {
                     // show the popup
-                    var gpaboxAj;
                     if (h2 != '') {
                         var popupSplit = h2.split('.');
-                        nav.openPopup(firstLastHash, popupSplit);
+
+                        // Clean the ? from the hash path
+                        var clearFirstLashHash = firstLastHash.split('?');
+                        nav.openPopup(clearFirstLashHash[0], popupSplit, firstLastHash);
                     } else {
                         $F.popup.close();
                     }
@@ -879,7 +889,6 @@ var BM = {};
                     executionStack = [];
                 }
 
-                var i=0;
                 nav.getScript({
                     hashList: pathArray,
                     hash: proc.hash,
@@ -888,7 +897,6 @@ var BM = {};
 
                 firstLastHashNoParam = proc.hash;
                 firstLastHash = first;
-                lastHash = newHash;
                 lastParam = proc.query;
 
                 $('a').off('click.commonnav', nav.anchorBind).on('click.commonnav', nav.anchorBind);
@@ -1256,6 +1264,56 @@ var BM = {};
         return json;
     };
     
+})(jQuery, $F);
+/** Tabbed view system for Formalhaut **/
+(function ($, $F) {
+    "use strict";
+
+    var defaultElementSelector = '.scrollablenav';
+    var randomClassAppender = (function() {
+        var length = 4;
+        var rand = 'abcdefghijklmnopqrstuvwxyz';
+        var className = '';
+
+        for(var i = 0; i < length; i++) {
+            var c = Math.random();
+            var r = rand[Math.floor(c * rand.length)];
+            className += r;
+        }
+
+        return className;
+    })();
+
+    $F.tabview = function (option) {
+        option = option || {};
+
+        var element;
+        if (option.element) {
+            element = $(option.element);
+        } else {
+            element = $(defaultElementSelector);
+        }
+
+        var wTotal = 0;
+        $('li', element).each(function () {
+            wTotal += $(this).width();
+        });
+
+        $(element).css('overflow', 'hidden');
+        $('ul', element).width(wTotal);
+
+        var wElement = $(element).width();
+        var deltaW = wTotal + parseInt($('ul', element).css('padding-left')) + parseInt($('ul', element).css('padding-right')) - wElement;
+        if (deltaW < 0) {
+            deltaW = 0;
+        }
+
+        var elX = $(element).position().left;
+        $(element).mousemove(function (e) {
+            var x = ((e.clientX - elX) / wElement) * deltaW;
+            $(element).scrollLeft(x);
+        });
+    }
 })(jQuery, $F);
 /** Tutorial Processing Engine for Formalhaut **/
 (function ($, $F) {
