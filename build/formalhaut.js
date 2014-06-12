@@ -6,7 +6,6 @@ var $F = ($F) ? $F : null;
 
     var ajaxRequest = 0;
     var processedRequest = 0;
-    var startRequest = 0;
     var barTimeout = 20;
     var barClearTimeout;
     var maxAnimation = 20;
@@ -33,8 +32,6 @@ var $F = ($F) ? $F : null;
     }
 
     function initF() {
-        var config = {};
-
         var build = function () {
 
         };
@@ -357,14 +354,19 @@ var BM = {};
     };
 
     $F.format.number = function (number) {
-        return $F.format.customNumber(number, '.', ',', ',', '.');
+        return $F.format.customNumber(number, '.', ',', ',', '.', false);
     };
 
-    $F.format.customNumber = function (number, commaFrom, thousandFrom, commaTo, thousandTo) {
+    $F.format.cleanNumber = function (number) {
+        return $F.format.customNumber(number, '.', ',', ',', '.', true);
+    };
+
+    $F.format.customNumber = function (number, commaFrom, thousandFrom, commaTo, thousandTo, trimTrailingZero) {
         commaFrom = commaFrom || '.';
         thousandFrom = thousandFrom || ',';
         commaTo = commaTo || commaFrom;
         thousandTo = thousandTo || thousandFrom;
+        trimTrailingZero = trimTrailingZero || false;
 
         if (number == null) {
             return number;
@@ -392,7 +394,13 @@ var BM = {};
             }
 
             if (num.length > 1) {
-                s2 += commaTo + num[1];
+                if (trimTrailingZero) {
+                    num[1] = num[1].replace(/0+$/, '');
+                }
+
+                if(num[1] != '') {
+                    s2 += commaTo + num[1];
+                }
             }
 
             num = s2;
