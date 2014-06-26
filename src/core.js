@@ -49,7 +49,8 @@ var $F = ($F) ? $F : null;
                 url: opt.url,
                 data: opt.data || {},
                 type: opt.type || 'GET',
-                contentType: opt.contentType || 'application/json',
+                contentType: typeof(opt.contentType) != 'undefined' ? opt.contentType : 'application/json',
+                processData: typeof(opt.processData) != 'undefined' ? opt.processData : true,
                 dataType: opt.dataType || 'json',
                 success: function (data, status) {
                     // Support for legacy code without status
