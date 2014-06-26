@@ -72,14 +72,19 @@
     };
 
     $F.format.number = function (number) {
-        return $F.format.customNumber(number, '.', ',', ',', '.');
+        return $F.format.customNumber(number, '.', ',', ',', '.', false);
     };
 
-    $F.format.customNumber = function (number, commaFrom, thousandFrom, commaTo, thousandTo) {
+    $F.format.cleanNumber = function (number) {
+        return $F.format.customNumber(number, '.', ',', ',', '.', true);
+    };
+
+    $F.format.customNumber = function (number, commaFrom, thousandFrom, commaTo, thousandTo, trimTrailingZero) {
         commaFrom = commaFrom || '.';
         thousandFrom = thousandFrom || ',';
         commaTo = commaTo || commaFrom;
         thousandTo = thousandTo || thousandFrom;
+        trimTrailingZero = trimTrailingZero || false;
 
         if (number == null) {
             return number;
@@ -107,7 +112,13 @@
             }
 
             if (num.length > 1) {
-                s2 += commaTo + num[1];
+                if (trimTrailingZero) {
+                    num[1] = num[1].replace(/0+$/, '');
+                }
+
+                if(num[1] != '') {
+                    s2 += commaTo + num[1];
+                }
             }
 
             num = s2;

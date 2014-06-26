@@ -57,8 +57,20 @@
     };
 
     // Set the location (hash) to the specific path
-    $F.nav.setLocation = function setUrl(path) {
+    $F.nav.setLocation = function setLocation(path) {
         location.hash = path;
+    };
+
+    // Set the location (hash) to the specific path, remove the previos entry from history
+    $F.nav.rewriteLocation = function rewriteLocation(path) {
+        if(window.history && window.history.replaceState) {
+            window.history.replaceState({}, null, path);
+
+            // Start the hashchange event since the history modification doesn't trigger it automatically
+            $(window).trigger('hashchange');
+        } else {
+            $F.nav.setLocation(path);
+        }
     };
 
     // Force refresh the current view, including reload the script and the html
