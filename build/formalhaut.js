@@ -722,10 +722,9 @@ var BM = {};
             q = url.substr(url.search(/\?/) + 1);
             h = url.substr(0, url.search(/\?/));
             paramType = 2;
-        }
+        } else if (url.search(/\./) !== -1) {
+            // Split the dot argument from the physical path
 
-        // Split the dot argument from the physical path
-        if (url.search(/\./) !== -1) {
             var search = url.search(/\./);
             q = url.substr(search + 1);
             h = url.substr(0, search);
