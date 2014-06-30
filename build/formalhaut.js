@@ -667,14 +667,15 @@ var BM = {};
         });
     };
 
-    nav.openPopup = function openPopup(firstHash, arg, fullFirstHash) {
+    nav.openPopup = function openPopup(firstHash, secondHash, fullFirstHash) {
         fullFirstHash = fullFirstHash || firstHash;
 
+        var split = nav.splitParameter(secondHash);
         var base = firstHash.split('.');
-        $.getScript('view/' + base[0] +'/' + arg[0] + '.js', function () {
+        $.getScript('view/' + base[0] +'/' + split.hash + '.js', function () {
             var popup = $F.compat.popupSubViewInit(nav.subView);
 
-            $.get('view/' + base[0] + '/' + arg[0] + '.html', function (data) {
+            $.get('view/' + base[0] + '/' + split.hash + '.html', function (data) {
                 $F.popup.show({
                     content: data,
                     scrolling: 'no',
@@ -690,23 +691,8 @@ var BM = {};
                     }
 
                     popup.closePopup = nav.closePopup;
-
-                    var arg2 = {
-                        fullParam: '',
-                        param: []
-                    };
-
-                    if (arg.length > 1) {
-                        arg2.fullParam = arg[1];
-
-                        if (arg2.fullParam !== "") {
-                            arg2.param = arg[1].split('/');
-                        }
-                    }
-
                     popup.parent = nav.currentSubView;
-
-                    popup.afterLoad(arg2);
+                    popup.afterLoad(split.arg);
                 }
             }, 'html');
         });
@@ -871,11 +857,9 @@ var BM = {};
                 if (secondLastHash != h2) {
                     // show the popup
                     if (h2 != '') {
-                        var popupSplit = h2.split('.');
-
                         // Clean the ? from the hash path
                         var clearFirstLashHash = firstLastHash.split('?');
-                        nav.openPopup(clearFirstLashHash[0], popupSplit, firstLastHash);
+                        nav.openPopup(clearFirstLashHash[0], h2, firstLastHash);
                     } else {
                         $F.popup.close();
                     }
