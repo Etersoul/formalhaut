@@ -23,4 +23,32 @@
 
         return (queryString !== '') ? (base + '?' + queryString) : '';
     };
+
+    $F.util.fillForm = function (selector, obj) {
+        if ($(selector).prop('nodeName').toLowerCase() === 'form') {
+            for (var key in obj) {
+                $('[name=' + key + ']', $(selector)).val(obj[key]);
+            }
+        }
+    };
+
+    $F.util.propertiesExist = function (obj, props) {
+        if (!props instanceof Array || !obj instanceof Object) {
+            console.error('$F.util.propertiesExist(obj, props) parameters are invalid types.');
+            return false;
+        }
+
+        var valid = 0;
+        for (var i = 0, j = props.length; i < j; i++) {
+            if (typeof obj[props[i]] != 'undefined') {
+                valid++;
+            }
+        }
+
+        if (props.length == valid) {
+            return true;
+        }
+
+        return false;
+    };
 })(jQuery, $F);

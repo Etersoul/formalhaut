@@ -3,6 +3,8 @@
     "use strict";
 
     var isPopupActive = false,
+        usePlaceholder = false,
+        placeholderClone,
         objOption,
         wrap = null;
 
@@ -56,7 +58,17 @@
             left : '0'
         });
 
-        var divContent = $('<div id="popupcontent"></div>').html(obj.content);
+        var divContent;
+        if (obj.content instanceof $) {
+            usePlaceholder = true;
+            placeholderClone = obj.content.clone();
+
+            obj.content.before('<div id="popup-placeholder" style="display:none"></div>');
+            obj.content.show();
+            divContent = $('<div id="popupcontent"></div>').append(obj.content);
+        } else {
+            divContent = $('<div id="popupcontent"></div>').html(obj.content);
+        }
 
         wrap = $('<div></div>').css({
             width : w + 'px',
@@ -141,7 +153,14 @@
         wrap.animate({
             opacity : '0'
         }, 250, function() {
-            $(this).remove()
+            $(this).hide();
+
+            if (usePlaceholder) {
+                $('#popup-placeholder').before(placeholderClone).remove();
+                usePlaceholder = false;
+                placeholderClone = '';
+                $(this).remove();
+            }
         });
     };
 
