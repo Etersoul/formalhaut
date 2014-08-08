@@ -3,7 +3,7 @@
 
     <property name="src" location="src" />
     <property name="build" location="build" />
-	
+
     <target name="compile">
         <concat destfile="build/formalhaut.js">
             <filelist dir="src" files="core.js" />

@@ -1183,8 +1183,9 @@ var BM = {};
                 $('#popup-placeholder').before(placeholderClone).remove();
                 usePlaceholder = false;
                 placeholderClone = '';
-                $(this).remove();
             }
+
+            $(this).remove();
         });
     };
 
