@@ -111,7 +111,8 @@
                 // run the afterLoad function of the parent, and process the HTML data
                 var arg = {
                     fullParam: opt.query,
-                    param: []
+                    param: [],
+                    namedParam: {}
                 };
 
                 if (opt.query !== "") {
@@ -253,6 +254,7 @@
 
                     popup.closePopup = nav.closePopup;
                     popup.parent = nav.currentSubView;
+
                     popup.afterLoad(split.arg);
                 }
             }, 'html');
@@ -303,7 +305,6 @@
                 arg.param = q.split('/');
             } else {
                 arg.param = q.split('&');
-                arg.namedParam = {};
                 for (var i = 0; i < arg.param.length; i++) {
                     var argi = arg.param[i];
                     var search = argi.search('=');
