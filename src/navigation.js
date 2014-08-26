@@ -28,6 +28,10 @@
     /** Public Function **/
     $F.nav = {};
 
+    /** Constant **/
+    $F.nav.TRIGGER_SCOPE_PARAM = 'param';
+    $F.nav.TRIGGER_SCOPE_FULL = 'all';
+
     // Get current hash in the URL
     $F.nav.getCurrentHash = function getCurrentHash() {
         return location.hash;
@@ -57,8 +61,16 @@
     };
 
     // Set the location (hash) to the specific path
-    $F.nav.setLocation = function setLocation(path) {
+    $F.nav.setLocation = function setLocation(path, forceTrigger) {
+        if (typeof forceTrigger == 'undefined') {
+            forceTrigger = false;
+        }
+
         location.hash = path;
+
+        if (forceTrigger) {
+            $(window).trigger('hashchange', forceTrigger);
+        }
     };
 
     // Set the location (hash) to the specific path, remove the previos entry from history
@@ -360,7 +372,7 @@
 
     // Inialization function
     function init() {
-        $(window).on('hashchange', function () {
+        $(window).on('hashchange', function (event, triggerScope) {
             // Proceed second hash shorthand
             if (window.location.hash.substr(0, 2) === '##') {
                 window.history.replaceState(null, "", '#/' + firstLastHash + '#' + window.location.hash.substr(2));
@@ -391,27 +403,25 @@
 
                 var proc = nav.splitParameter(h);
 
-                if (firstLastHashNoParam == proc.hash) {
-                    // just the query is changed
-                    if (lastParam != proc.query) {
-                        var current = nav.currentSubView;
+                // just the query is changed OR when force trigger flag is set
+                if ((firstLastHashNoParam == proc.hash && lastParam != proc.query) || triggerScope === $F.nav.TRIGGER_SCOPE_PARAM) {
+                    var current = nav.currentSubView;
 
-                        for (;;) {
-                            if (current.afterParamLoad) {
-                                current.afterParamLoad(proc.arg);
-                            }
-                            if(typeof current.parent == 'undefined') {
-                                break;
-                            }
-                            current = current.parent;
+                    for (;;) {
+                        if (current.afterParamLoad) {
+                            current.afterParamLoad(proc.arg);
                         }
-
-                        lastParam = proc.query;
-                        firstLastHash = first;
-
-                        $F.nav.prepareHashModifier();
-                        return;
+                        if(typeof current.parent == 'undefined') {
+                            break;
+                        }
+                        current = current.parent;
                     }
+
+                    lastParam = proc.query;
+                    firstLastHash = first;
+
+                    $F.nav.prepareHashModifier();
+                    return;
                 }
 
                 // check if second hash changed
