@@ -500,15 +500,17 @@ var BM = {};
     };
 
     // Set the location (hash) to the specific path
-    $F.nav.setLocation = function setLocation(path, forceTrigger) {
-        if (typeof forceTrigger == 'undefined') {
-            forceTrigger = false;
-        }
-
+    $F.nav.setLocation = function setLocation(path) {
         location.hash = path;
+    };
+
+    $F.nav.setNamedParam = function setNamedParam(param, forceTrigger) {
+        forceTrigger = forceTrigger || false;
+
+        location.href = $F.util.buildUrl('#/' + firstLastHashNoParam, param);
 
         if (forceTrigger) {
-            $(window).trigger('hashchange', forceTrigger);
+            $(window).trigger('hashchange', $F.nav.TRIGGER_SCOPE_PARAM);
         }
     };
 
@@ -657,7 +659,15 @@ var BM = {};
         }
 
         $('#' + rel).load($F.config.get('viewUri') + req + '.html', function () {
-            var par = nav.splitParameter($F.nav.getCurrentHash().substr(2));
+            // Get the default parameter
+            var defaultArg = null;
+            if (typeof view.defaultArguments !== 'undefined') {
+                defaultArg = view.defaultArguments;
+            }
+
+            // Split the URL into parameter and other things, then trigger the afterLoad event
+            var par = nav.splitParameter($F.nav.getCurrentHash().substr(2), defaultArg);
+
             view.afterLoad(par.arg);
 
             document.title = view.title;
@@ -706,6 +716,8 @@ var BM = {};
                     popup.closePopup = nav.closePopup;
                     popup.parent = nav.currentSubView;
 
+                    // Apply new default parameter
+                    split = nav.splitParameter(secondHash, popup.defaultArguments);
                     popup.afterLoad(split.arg);
                 }
             }, 'html');
@@ -723,7 +735,9 @@ var BM = {};
         callback();
     };
 
-    nav.splitParameter = function splitParameter(url) {
+    nav.splitParameter = function splitParameter(url, defaultArguments) {
+        defaultArguments = defaultArguments || {};
+
         // Wipe out all the second hashes since they are not the part of parameter
         url = url.split('#')[0];
 
@@ -738,7 +752,6 @@ var BM = {};
             paramType = 2;
         } else if (url.search(/\./) !== -1) {
             // Split the dot argument from the physical path
-
             var search = url.search(/\./);
             q = url.substr(search + 1);
             h = url.substr(0, search);
@@ -763,6 +776,21 @@ var BM = {};
                     var key = argi.substr(0, search);
                     arg.namedParam[key] = val;
                 }
+            }
+        }
+
+        // Implant default arguments if necessary
+        if (defaultArguments instanceof Array) {
+            for (var i = arg.param.length; i < defaultArguments.length; i++) {
+                arg.param.push(defaultArguments[i]);
+            }
+        } else {
+            for (var data in defaultArguments) {
+                if (typeof arg.namedParam[data] !== 'undefined') {
+                    continue;
+                }
+
+                arg.namedParam[data] = defaultArguments[data];
             }
         }
 
@@ -842,10 +870,12 @@ var BM = {};
 
                 var proc = nav.splitParameter(h);
 
-                // just the query is changed
-                console.log(triggerScope);
-                if ((firstLastHashNoParam == proc.hash && lastParam != proc.query) || triggerScope == $F.nav.TRIGGER_SCOPE_PARAM) {
+                // just the query is changed OR when force trigger flag is set
+                if ((firstLastHashNoParam == proc.hash && lastParam != proc.query) || triggerScope === $F.nav.TRIGGER_SCOPE_PARAM) {
                     var current = nav.currentSubView;
+
+                    // Rewrite the proc variable
+                    proc = nav.splitParameter(h, current.defaultArguments);
 
                     for (;;) {
                         if (current.afterParamLoad) {
