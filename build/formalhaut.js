@@ -611,15 +611,15 @@ var BM = {};
             var required = '';
             if (typeof view.require != 'undefined') {
                 required = view.require;
-            } else {
-                // reset scriptstack if we reach the main module
-                scriptStack = [];
             }
 
             executionStack.push(stack);
 
             // No more required script to fetch, start getting the HTML
             if (required === '') {
+                // reset scriptstack if we reach the main module
+                scriptStack = [];
+
                 nav.getHTML(opt.query);
                 return;
             }
