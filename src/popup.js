@@ -2,24 +2,14 @@
 (function($, $F) {
     "use strict";
 
-    var isPopupActive = false,
+    var activePopup = null,
         usePlaceholder = false,
         placeholderClone,
-        objOption,
-        wrap = null;
+        objOption;
 
-    // Mutation observer (only available in modern browser and IE11+)
-    var observer = new MutationObserver(function (mutations) {
-        resizePopup();
-    });
-
-    $F.popup = {};
-
-    $F.popup.show = function (obj) {
-        if (isPopupActive) {
-            $F.popup.close();
-            isPopupActive = false;
-        }
+    // Create popup prototype
+    function PopupObject(obj) {
+        this.wrap = null;
 
         obj.content = obj.content || '';
         obj.width = obj.width || 'auto';
@@ -33,11 +23,7 @@
         var h = $(window).height();
         var self = this;
 
-        if (wrap != null) {
-            wrap = null;
-        }
-
-        var divBorder = $('<div id="popupborder"></div>').css({
+        var divBorder = $('<div class="popupborder"></div>').css({
             width : obj.width,
             height : obj.height,
             background : '#fff',
@@ -65,12 +51,12 @@
 
             obj.content.before('<div id="popup-placeholder" style="display:none"></div>');
             obj.content.show();
-            divContent = $('<div id="popupcontent"></div>').append(obj.content);
+            divContent = $('<div class="popupcontent"></div>').append(obj.content);
         } else {
-            divContent = $('<div id="popupcontent"></div>').html(obj.content);
+            divContent = $('<div class="popupcontent"></div>').html(obj.content);
         }
 
-        wrap = $('<div></div>').css({
+        this.wrap = $('<div></div>').css({
             width : w + 'px',
             height : h + 'px',
             position : 'fixed',
@@ -113,22 +99,29 @@
         }
 
         divBorder.append(divContent);
-        wrap.append(bg).append(divBorder);
+        this.wrap.append(bg).append(divBorder);
 
         $('body').css({
             position : 'relative',
             overflow : 'hidden'
-        }).append(wrap);
+        }).append(this.wrap);
 
-        wrap.animate({
+        this.wrap.animate({
             opacity : 1
         }, 250);
 
         // reposition the popup
-        resizePopup();
-        $(window).on('resize.popup', resizePopup);
+        var scopeWrap = this.wrap;
 
-        isPopupActive = true;
+        resizePopup({}, this.wrap);
+        $(window).on('resize.popup', function () {
+            resizePopup({}, scopeWrap);
+        });
+
+        // Mutation observer (only available in modern browser and IE11+)
+        var observer = new MutationObserver(function (mutations) {
+            resizePopup({}, scopeWrap);
+        });
 
         // Bind the mutation observer
         if (obj.autoExpand) {
@@ -139,39 +132,59 @@
         }
     }
 
+    PopupObject.prototype.close = function (param) {
+        param = param || {};
+        if (param.afterClose) {
+            param.afterClose();
+        }
+
+        $('body').css({
+            overflow : ''
+        });
+
+        this.wrap.animate({
+            opacity : '0'
+        }, 250, function() {
+            $(this).hide();
+            $(this).remove();
+        });
+    };
+
+    $F.popup = {};
+
+    $F.popup.create = function (obj) {
+        return new PopupObject(obj);
+    };
+
+    // For the static popup
+    $F.popup.show = function (obj) {
+        if (activePopup) {
+            $F.popup.close();
+            activePopup = null;
+        }
+
+        activePopup = new PopupObject(obj);
+    };
+
     $F.popup.close = function (param) {
         param = param || {};
         if (param.afterClose) {
             param.afterClose();
         }
 
-        isPopupActive = false;
-        $('body').css({
-            overflow : ''
-        });
-
-        wrap.animate({
-            opacity : '0'
-        }, 250, function() {
-            $(this).hide();
-
-            if (usePlaceholder) {
-                $('#popup-placeholder').before(placeholderClone).remove();
-                usePlaceholder = false;
-                placeholderClone = '';
-            }
-
-            $(this).remove();
-        });
+        if (activePopup != null) {
+            activePopup.close(param);
+            activePopup = null;
+        }
     };
 
     $F.popup.resize = function (param) {
         param = param || {};
         param.width = param.width || null;
-        resizePopup(param);
+        resizePopup(param, activePopup.wrap);
     };
 
-    function resizePopup(param) {
+    function resizePopup(param, wrap) {
         param = param || {};
         param.width = param.width || null;
 
@@ -183,8 +196,8 @@
             height : h + 'px'
         });
 
-        var divBorder = $('#popupborder', wrap);
-        var divContent = $('#popupcontent', divBorder);
+        var divBorder = $('.popupborder', wrap);
+        var divContent = $('.popupcontent', divBorder);
         divBorder.css({
             width : objOption.width,
             height : objOption.height

@@ -40,15 +40,32 @@ var $F = ($F) ? $F : null;
         build.window = window;
 
         build.ajax = function (opt) {
+            opt.progress = opt.progress || true;
+            var ajaxType = opt.type || 'GET';
+            var popup = null;
+
             ++ajaxRequest;
             if (!showLoadBar) {
                 loadBar();
             }
 
+            // Set default behavior for POST
+            // For GET, the default behavior is do nothing
+            if (opt.progress === true) {
+                if (ajaxType.toLowerCase() === 'post') {
+                    popup = $F.popup.create({
+                        content: '<p style="font-size: 14px">Processing request. Please wait until this message dissapear.',
+                        modal: true
+                    });
+                }
+            } else if (typeof opt.progress === 'function') {
+                opt.progress();
+            }
+
             return $.ajax({
                 url: opt.url,
                 data: opt.data || {},
-                type: opt.type || 'GET',
+                type: ajaxType,
                 contentType: typeof(opt.contentType) != 'undefined' ? opt.contentType : 'application/json',
                 processData: typeof(opt.processData) != 'undefined' ? opt.processData : true,
                 dataType: opt.dataType || 'json',
@@ -64,6 +81,10 @@ var $F = ($F) ? $F : null;
                     }
 
                     opt.success(data.data, data.status);
+
+                    if (popup != null) {
+                        popup.close();
+                    }
                 },
                 complete: function () {
                     ++processedRequest;
@@ -78,6 +99,10 @@ var $F = ($F) ? $F : null;
                         location.href = $F.config.get('loginUri');
                     }
                     $F.logError('Ajax error');
+
+                    var errorPopup = $F.popup.create({
+                        content: '<p style="font-size: 14px">There is an error somewhere.</p>'
+                    });
                 }
             });
         };

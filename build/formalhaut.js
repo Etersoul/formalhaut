@@ -40,15 +40,32 @@ var $F = ($F) ? $F : null;
         build.window = window;
 
         build.ajax = function (opt) {
+            opt.progress = opt.progress || true;
+            var ajaxType = opt.type || 'GET';
+            var popup = null;
+
             ++ajaxRequest;
             if (!showLoadBar) {
                 loadBar();
             }
 
+            // Set default behavior for POST
+            // For GET, the default behavior is do nothing
+            if (opt.progress === true) {
+                if (ajaxType.toLowerCase() === 'post') {
+                    popup = $F.popup.create({
+                        content: '<p style="font-size: 14px">Processing request. Please wait until this message dissapear.',
+                        modal: true
+                    });
+                }
+            } else if (typeof opt.progress === 'function') {
+                opt.progress();
+            }
+
             return $.ajax({
                 url: opt.url,
                 data: opt.data || {},
-                type: opt.type || 'GET',
+                type: ajaxType,
                 contentType: typeof(opt.contentType) != 'undefined' ? opt.contentType : 'application/json',
                 processData: typeof(opt.processData) != 'undefined' ? opt.processData : true,
                 dataType: opt.dataType || 'json',
@@ -64,6 +81,10 @@ var $F = ($F) ? $F : null;
                     }
 
                     opt.success(data.data, data.status);
+
+                    if (popup != null) {
+                        popup.close();
+                    }
                 },
                 complete: function () {
                     ++processedRequest;
@@ -78,6 +99,10 @@ var $F = ($F) ? $F : null;
                         location.href = $F.config.get('loginUri');
                     }
                     $F.logError('Ajax error');
+
+                    var errorPopup = $F.popup.create({
+                        content: '<p style="font-size: 14px">There is an error somewhere.</p>'
+                    });
                 }
             });
         };
@@ -1068,24 +1093,14 @@ var BM = {};
 (function($, $F) {
     "use strict";
 
-    var isPopupActive = false,
+    var activePopup = null,
         usePlaceholder = false,
         placeholderClone,
-        objOption,
-        wrap = null;
+        objOption;
 
-    // Mutation observer (only available in modern browser and IE11+)
-    var observer = new MutationObserver(function (mutations) {
-        resizePopup();
-    });
-
-    $F.popup = {};
-
-    $F.popup.show = function (obj) {
-        if (isPopupActive) {
-            $F.popup.close();
-            isPopupActive = false;
-        }
+    // Create popup prototype
+    function PopupObject(obj) {
+        this.wrap = null;
 
         obj.content = obj.content || '';
         obj.width = obj.width || 'auto';
@@ -1099,11 +1114,7 @@ var BM = {};
         var h = $(window).height();
         var self = this;
 
-        if (wrap != null) {
-            wrap = null;
-        }
-
-        var divBorder = $('<div id="popupborder"></div>').css({
+        var divBorder = $('<div class="popupborder"></div>').css({
             width : obj.width,
             height : obj.height,
             background : '#fff',
@@ -1131,12 +1142,12 @@ var BM = {};
 
             obj.content.before('<div id="popup-placeholder" style="display:none"></div>');
             obj.content.show();
-            divContent = $('<div id="popupcontent"></div>').append(obj.content);
+            divContent = $('<div class="popupcontent"></div>').append(obj.content);
         } else {
-            divContent = $('<div id="popupcontent"></div>').html(obj.content);
+            divContent = $('<div class="popupcontent"></div>').html(obj.content);
         }
 
-        wrap = $('<div></div>').css({
+        this.wrap = $('<div></div>').css({
             width : w + 'px',
             height : h + 'px',
             position : 'fixed',
@@ -1179,22 +1190,29 @@ var BM = {};
         }
 
         divBorder.append(divContent);
-        wrap.append(bg).append(divBorder);
+        this.wrap.append(bg).append(divBorder);
 
         $('body').css({
             position : 'relative',
             overflow : 'hidden'
-        }).append(wrap);
+        }).append(this.wrap);
 
-        wrap.animate({
+        this.wrap.animate({
             opacity : 1
         }, 250);
 
         // reposition the popup
-        resizePopup();
-        $(window).on('resize.popup', resizePopup);
+        var scopeWrap = this.wrap;
 
-        isPopupActive = true;
+        resizePopup({}, this.wrap);
+        $(window).on('resize.popup', function () {
+            resizePopup({}, scopeWrap);
+        });
+
+        // Mutation observer (only available in modern browser and IE11+)
+        var observer = new MutationObserver(function (mutations) {
+            resizePopup({}, scopeWrap);
+        });
 
         // Bind the mutation observer
         if (obj.autoExpand) {
@@ -1205,39 +1223,59 @@ var BM = {};
         }
     }
 
+    PopupObject.prototype.close = function (param) {
+        param = param || {};
+        if (param.afterClose) {
+            param.afterClose();
+        }
+
+        $('body').css({
+            overflow : ''
+        });
+
+        this.wrap.animate({
+            opacity : '0'
+        }, 250, function() {
+            $(this).hide();
+            $(this).remove();
+        });
+    };
+
+    $F.popup = {};
+
+    $F.popup.create = function (obj) {
+        return new PopupObject(obj);
+    };
+
+    // For the static popup
+    $F.popup.show = function (obj) {
+        if (activePopup) {
+            $F.popup.close();
+            activePopup = null;
+        }
+
+        activePopup = new PopupObject(obj);
+    };
+
     $F.popup.close = function (param) {
         param = param || {};
         if (param.afterClose) {
             param.afterClose();
         }
 
-        isPopupActive = false;
-        $('body').css({
-            overflow : ''
-        });
-
-        wrap.animate({
-            opacity : '0'
-        }, 250, function() {
-            $(this).hide();
-
-            if (usePlaceholder) {
-                $('#popup-placeholder').before(placeholderClone).remove();
-                usePlaceholder = false;
-                placeholderClone = '';
-            }
-
-            $(this).remove();
-        });
+        if (activePopup != null) {
+            activePopup.close(param);
+            activePopup = null;
+        }
     };
 
     $F.popup.resize = function (param) {
         param = param || {};
         param.width = param.width || null;
-        resizePopup(param);
+        resizePopup(param, activePopup.wrap);
     };
 
-    function resizePopup(param) {
+    function resizePopup(param, wrap) {
         param = param || {};
         param.width = param.width || null;
 
@@ -1249,8 +1287,8 @@ var BM = {};
             height : h + 'px'
         });
 
-        var divBorder = $('#popupborder', wrap);
-        var divContent = $('#popupcontent', divBorder);
+        var divBorder = $('.popupborder', wrap);
+        var divContent = $('.popupcontent', divBorder);
         divBorder.css({
             width : objOption.width,
             height : objOption.height
@@ -1288,36 +1326,48 @@ var BM = {};
 /** Data serialization for Formalhaut **/
 (function ($, $F) {
     "use strict";
-    
+
     $F.serialize = function (selector, returnStringify) {
         returnStringify = (returnStringify == null) ? false : returnStringify;
-        
+
         var json = {};
         jQuery.map($(selector).serializeArray(), function (n, i) {
-            var cleanName = n.name.replace(/\[\]$/, '');
+            var cleanName = n.name.replace(/\[.*\]$/, '');
             if (typeof json[cleanName] == 'undefined') {
                 if (/\[\]$/.test(n.name)) {
                     json[cleanName] = [n.value];
+                } else if (/\[.*\]$/.test(n.name)) {
+                    json[cleanName] = {};
+
+                    var reg = /\[(.*)\]$/;
+                    var key = reg.exec(n.name);
+                    json[cleanName][key[1]] = n.value;
                 } else {
                     json[cleanName] = n.value;
                 }
             } else {
                 if (typeof json[cleanName] == 'object') {
-                    json[cleanName].push(n.value);
+                    if (cleanName instanceof Array) {
+                        json[cleanName].push(n.value);
+                    } else {
+                        var reg = /\[(.*)\]$/;
+                        var key = reg.exec(n.name);
+                        json[cleanName][key[1]] = n.value;
+                    }
                 } else {
                     var temp = json[cleanName];
                     json[cleanName] = [temp, n.value];
                 }
             }
         });
-        
+
         if (returnStringify) {
             return JSON.stringify(json);
         }
-        
+
         return json;
     };
-    
+
 })(jQuery, $F);
 /** Tabbed view system for Formalhaut **/
 (function ($, $F) {
