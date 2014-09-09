@@ -8,6 +8,7 @@
         var json = {};
         jQuery.map($(selector).serializeArray(), function (n, i) {
             var cleanName = n.name.replace(/\[.*\]$/, '');
+
             if (typeof json[cleanName] == 'undefined') {
                 if (/\[\]$/.test(n.name)) {
                     json[cleanName] = [n.value];
@@ -22,7 +23,7 @@
                 }
             } else {
                 if (typeof json[cleanName] == 'object') {
-                    if (cleanName instanceof Array) {
+                    if (json[cleanName] instanceof Array) {
                         json[cleanName].push(n.value);
                     } else {
                         var reg = /\[(.*)\]$/;
