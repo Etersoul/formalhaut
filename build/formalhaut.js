@@ -81,15 +81,16 @@ var $F = ($F) ? $F : null;
                     }
 
                     opt.success(data.data, data.status);
-
-                    if (popup != null) {
-                        popup.close();
-                    }
                 },
                 complete: function () {
                     ++processedRequest;
                     if (opt.complete) {
                         opt.complete.apply(this, arguments);
+                    }
+
+                    // Don't forget to close loading popup
+                    if (popup != null) {
+                        popup.close();
                     }
 
                     $F.nav.prepareHashModifier();
@@ -101,7 +102,7 @@ var $F = ($F) ? $F : null;
                     $F.logError('Ajax error');
 
                     var errorPopup = $F.popup.create({
-                        content: '<p style="font-size: 14px">There is an error somewhere.</p>'
+                        content: '<p style="font-size: 14px">There is an error somewhere in the service. Please inform the developer.</p>'
                     });
                 }
             });
