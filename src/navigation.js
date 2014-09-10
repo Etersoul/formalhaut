@@ -333,8 +333,8 @@
                 for (var i = 0; i < arg.param.length; i++) {
                     var argi = arg.param[i];
                     var search = argi.search('=');
-                    var val = argi.substr(search + 1);
-                    var key = argi.substr(0, search);
+                    var val = decodeURI(argi.substr(search + 1));
+                    var key = decodeURI(argi.substr(0, search));
                     arg.namedParam[key] = val;
                 }
             }
