@@ -44,6 +44,10 @@
     };
 
     $F.format.date = function (date) {
+        if (!date) {
+            return '';
+        }
+
         var d = date.split(/-/);
         return d[2] + '-' + d[1] + '-' + d[0];
     };

@@ -357,6 +357,10 @@ var BM = {};
     };
 
     $F.format.date = function (date) {
+        if (!date) {
+            return '';
+        }
+
         var d = date.split(/-/);
         return d[2] + '-' + d[1] + '-' + d[0];
     };
@@ -479,6 +483,8 @@ var BM = {};
     var isFirstLoad = true;
     var executionStack = [];
     var scriptStack = [];
+    var triggerView = null;
+    var navPopup = null;
 
     /** Instance member **/
     var nav = {};
@@ -621,48 +627,61 @@ var BM = {};
             getDebug = $.getScript;
         }
 
-        getDebug($F.config.get('viewUri') + opt.hash + '.js', function () {
-            // TODO: remove compatibility layer
-            var view = $F.compat.subViewInit(nav.subView);
+        try {
+            getDebug($F.config.get('viewUri') + opt.hash + '.js', function () {
+                // TODO: remove compatibility layer
+                var view = $F.compat.subViewInit(nav.subView);
 
-            if(typeof view.isPopup !== 'undefined' && view.isPopup) {
-                console.warn('Accessing popup as a non-popup view.');
-                alert('Accessing popup as a non-popup view.');
-                return;
-            }
+                if(typeof view.isPopup !== 'undefined' && view.isPopup) {
+                    console.warn('Accessing popup as a non-popup view.');
+                    alert('Accessing popup as a non-popup view.');
+                    return;
+                }
 
-            // Clear the nav.subView
-            nav.subView = null;
-            var stack = {
-                script: view,
-                req: opt.hash
-            };
+                // Clear the nav.subView
+                nav.subView = null;
+                var stack = {
+                    script: view,
+                    req: opt.hash
+                };
 
-            var required = '';
-            if (typeof view.require != 'undefined') {
-                required = view.require;
-            }
+                var required = '';
+                if (typeof view.require != 'undefined') {
+                    required = view.require;
+                }
 
-            executionStack.push(stack);
+                executionStack.push(stack);
 
-            // No more required script to fetch, start getting the HTML
-            if (required === '') {
-                // reset scriptstack if we reach the main module
-                scriptStack = [];
+                // No more required script to fetch, start getting the HTML
+                if (required === '') {
+                    // reset scriptstack if we reach the main module
+                    scriptStack = [];
 
-                nav.getHTML(opt.query);
-                return;
-            }
+                    nav.getHTML(opt.query, opt.firstPopup);
+                    return;
+                }
 
-            nav.getScript({
-                hash: required,
-                query: opt.query,
-                parent: view
+                nav.getScript({
+                    hash: required,
+                    query: opt.query,
+                    parent: view,
+                    firstPopup: opt.firstPopup
+                });
             });
-        });
+        } catch (e) {
+            $F.popup.show({
+                content: '<h2 style="font-size:20px;margin: 0 0 20px 0;text-align:center">404 Error: File not found</h2>' +
+                    '<p style="width: 700px;margin:20px 0;line-height:18px;">You might be get here by entering wrong address in the address bar, clicking a link within application, or doing something that might trigger error. Please inform the developer if this problem persists and occured repeatedly.</p>' +
+                    '<div style="text-align:center;">' +
+                    '<a href="javascript:history.go(-1);$F.popup.close();" class="button">Return</a>' +
+                    '<a href="#/bug-report?problem=404" class="button">Report Problem</a>' +
+                    '<a href="." class="button">Return to dashboard.</a>' +
+                    '</div>'
+            });
+        }
     };
 
-    nav.getHTML = function getHTML(q) {
+    nav.getHTML = function getHTML(q, firstPopup) {
         if (executionStack.length == 0) {
             $F.nav.fixHashModifier();
             return;
@@ -701,6 +720,7 @@ var BM = {};
             view.afterLoad(par.arg);
 
             document.title = view.title;
+
             if (executionStack.length == 0) {
                 if (typeof view.onDefaultChild == 'function') {
                     view.onDefaultChild(par.arg);
@@ -709,6 +729,12 @@ var BM = {};
                 if (view.defaultChildView) {
                     history.replaceState(null, "", "#/" + view.defaultChildView);
                     $(window).trigger('hashchange');
+                    return;
+                }
+
+                // When all the HTML has been received, get the first popup
+                if (firstPopup) {
+                    nav.openPopup(req, firstPopup);
                 }
 
                 $F.nav.prepareHashModifier();
@@ -716,12 +742,14 @@ var BM = {};
                 return;
             }
 
-            nav.getHTML(q);
+            nav.getHTML(q, firstPopup);
         });
     };
 
-    nav.openPopup = function openPopup(firstHash, secondHash, fullFirstHash) {
-        fullFirstHash = fullFirstHash || firstHash;
+    nav.openPopup = function openPopup(fullFirstHash, secondHash, parent) {
+        parent = parent || nav.currentSubView;
+        var clearFirstLashHash = fullFirstHash.split('?');
+        var firstHash = clearFirstLashHash[0];
 
         var split = nav.splitParameter(secondHash);
         var base = firstHash.split('.');
@@ -729,12 +757,13 @@ var BM = {};
             var popup = $F.compat.popupSubViewInit(nav.subView);
 
             $.get('view/' + base[0] + '/' + split.hash + '.html', function (data) {
-                $F.popup.show({
+                navPopup = $F.popup.create({
                     content: data,
                     scrolling: 'no',
                     autoExpand: true,
                     afterClose: function () {
-                        location.hash = '#/' + fullFirstHash;
+                        $F.nav.setLocation('#/' + firstLastHash);
+                        $F.nav.fixHashModifier();
                     }
                 });
 
@@ -744,7 +773,7 @@ var BM = {};
                     }
 
                     popup.closePopup = nav.closePopup;
-                    popup.parent = nav.currentSubView;
+                    popup.parent = parent;
 
                     // Apply new default parameter
                     split = nav.splitParameter(secondHash, popup.defaultArguments);
@@ -925,20 +954,22 @@ var BM = {};
                 }
 
                 // check if second hash changed
+                var firstPopup = null;
                 if (secondLastHash != h2) {
-                    // show the popup
-                    if (h2 != '') {
-                        // Clean the ? from the hash path
-                        var clearFirstLashHash = firstLastHash.split('?');
-                        nav.openPopup(clearFirstLashHash[0], h2, firstLastHash);
-                    } else {
-                        $F.popup.close();
-                    }
-
-                    secondLastHash = h2;
-
                     if (!isFirstLoad) {
-                        return;
+                        // show the popup
+                        if (h2 != '') {
+                            nav.openPopup(firstLastHash, h2);
+                        } else {
+                            if (navPopup !== null) {
+                                navPopup.close();
+                                navPopup = null;
+                            }
+                        }
+
+                        secondLastHash = h2;
+                    } else {
+                        firstPopup = h2;
                     }
                 }
 
@@ -949,21 +980,19 @@ var BM = {};
 
                 // if we go to the ancestor path, invalidate last path data and stack
                 if(firstLastHash.indexOf(proc.hash) == 0) {
-                    firstLastHash = '';
                     executionStack = [];
                 }
 
                 nav.getScript({
                     hashList: pathArray,
                     hash: proc.hash,
-                    query: proc.query
+                    query: proc.query,
+                    firstPopup: firstPopup
                 });
 
                 firstLastHashNoParam = proc.hash;
                 firstLastHash = first;
                 lastParam = proc.query;
-
-                $('a').off('click.commonnav', nav.anchorBind).on('click.commonnav', nav.anchorBind);
             }
         });
     }
