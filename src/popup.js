@@ -5,7 +5,8 @@
     var activePopup = null,
         usePlaceholder = false,
         placeholderClone,
-        objOption;
+        objOption,
+        numPopup = 0;
 
     // Create popup prototype
     function PopupObject(obj) {
@@ -23,15 +24,23 @@
         var h = $(window).height();
         var self = this;
 
+        $('body').css({
+            position : 'relative',
+            overflow : 'hidden'
+        });
+
         var divBorder = $('<div class="popupborder"></div>').css({
             width : obj.width,
-            height : obj.height,
             background : '#fff',
             zIndex : '11005',
             position : 'absolute',
             border : '5px solid #ccc',
             padding : '10px',
             borderRadius : '10px'
+        });
+
+        divBorder.click(function (e) {
+            e.stopPropagation();
         });
 
         var bg = $('<div></div>').css({
@@ -57,13 +66,27 @@
         }
 
         this.wrap = $('<div></div>').css({
-            width : w + 'px',
-            height : h + 'px',
             position : 'fixed',
             top : '0',
             left : '0',
             zIndex : '10999',
-            opacity : '0'
+            opacity : '0',
+            width: w + 'px',
+            height: h + 'px'
+        }).click(function (e) {
+            e.stopPropagation();
+        });
+
+        var innerWrap = $('<div class="popupinnerwrap"></div>').css({
+            overflow: 'auto',
+            position: 'absolute',
+            zIndex: '11001',
+            width: w + 'px',
+            height: h + 'px'
+        });
+
+        var ndInnerWrap = $('<div class="popupndinnerwrap"></div>').css({
+            padding: '30px 0'
         });
 
         // add event onclick that will remove the popup if it's not a modal
@@ -89,7 +112,7 @@
                 });
             });
 
-            bg.click(function() {
+            innerWrap.click(function () {
                 self.close({
                     afterClose : obj.afterClose
                 });
@@ -99,12 +122,11 @@
         }
 
         divBorder.append(divContent);
-        this.wrap.append(bg).append(divBorder);
+        ndInnerWrap.append(divBorder);
+        innerWrap.append(ndInnerWrap);
+        this.wrap.append(bg).append(innerWrap);
 
-        $('body').css({
-            position : 'relative',
-            overflow : 'hidden'
-        }).append(this.wrap);
+        $('body').append(this.wrap);
 
         this.wrap.animate({
             opacity : 1
@@ -134,13 +156,17 @@
 
     PopupObject.prototype.close = function (param) {
         param = param || {};
+
+        // This part need more test before released to public, remain commented for awhile
+//        if ($('form', this.wrap).length !== 0) {
+//            if (!confirm('Do you really want to leave the form?')) {
+//                return;
+//            }
+//        }
+
         if (param.afterClose) {
             param.afterClose();
         }
-
-        $('body').css({
-            overflow : ''
-        });
 
         this.wrap.animate({
             opacity : '0'
@@ -148,11 +174,20 @@
             $(this).hide();
             $(this).remove();
         });
+
+        --numPopup;
+
+        if (numPopup == 0) {
+            $('body').css({
+                overflow : ''
+            });
+        }
     };
 
     $F.popup = {};
 
     $F.popup.create = function (obj) {
+        ++numPopup;
         return new PopupObject(obj);
     };
 
@@ -168,9 +203,6 @@
 
     $F.popup.close = function (param) {
         param = param || {};
-        if (param.afterClose) {
-            param.afterClose();
-        }
 
         if (activePopup != null) {
             activePopup.close(param);
@@ -196,12 +228,21 @@
             height : h + 'px'
         });
 
-        var divBorder = $('.popupborder', wrap);
-        var divContent = $('.popupcontent', divBorder);
-        divBorder.css({
-            width : objOption.width,
-            height : objOption.height
+        $('.popupinnerwrap', wrap).css({
+            width: w + 'px',
+            height: h + 'px'
         });
+
+        var divBorder = $('.popupborder', wrap);
+        var divNdInnerWrap = $('.popupndinnerwrap', wrap);
+
+        divBorder.css({
+            width : objOption.width
+        });
+
+        divNdInnerWrap.css({
+            height: (divBorder.height() + 30) + 'px'
+        })
 
         if (param.width != null) {
             divBorder.css('width', param.width);
@@ -210,25 +251,15 @@
         var wd = divBorder.width();
         var wh = divBorder.height();
 
-        if (wh >= h - 80) {
-            wh = h - 80;
-            divBorder.css({
-                height: wh
-            });
-
-            divContent.css({
-                overflow: 'auto',
-                height: wh - 10
-            });
-        } else {
-            divBorder.css({
-                height: 'auto'
-            });
-        }
-
         divBorder.css({
             left: (w / 2 - wd / 2 - 15) + 'px',
-            top: (h / 2 - wh / 2 - 15) + 'px'
+            height: 'auto'
         });
+
+        if (wh < w) {
+            divBorder.css({
+                top: (h / 2 - wh / 2 - 15) + 'px'
+            });
+        }
     }
 })(jQuery, $F);

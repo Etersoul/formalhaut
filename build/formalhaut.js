@@ -307,170 +307,6 @@ var BM = {};
         BM.serviceUri = $F.config.get('serviceUri');
     });
 })(jQuery, $F);
-// Error Handling Module for Formalhaut
-
-(function () {
-
-})();/** Formatting Toolbelt for Formalhaut **/
-(function ($, $F) {
-    "use strict";
-
-    $F.format = {};
-
-    $F.format.longDate = function (date) {
-        if (typeof date != 'string' || /^\d{4}-\d\d-\d\d$/.test(date) == false) {
-            return 'Invalid format (yyyy-mm-dd)';
-        }
-
-        var month = $F.config.get('months');
-        var d = date.split(/-/);
-        if(d[1][0]=='0'){
-            d[1] = parseInt(d[1][1]);
-        } else {
-            d[1] = parseInt(d[1]);
-        }
-
-        if(d[2][0]=='0'){
-            d[2] = d[2][1];
-        }
-        return d[2] + ' ' + month[d[1]] + ' ' + d[0];
-    };
-
-    $F.format.shortDate = function (date) {
-        if (typeof date != 'string' || /^\d{4}-\d\d-\d\d$/.test(date) == false) {
-            return 'Invalid format (yyyy-mm-dd)';
-        }
-
-        var month = $F.config.get('shortMonths');
-        var d = date.split(/-/);
-        if (d[1][0] == '0'){
-            d[1] = parseInt(d[1][1]);
-        } else {
-            d[1] = parseInt(d[1]);
-        }
-
-        if(d[2][0] == '0'){
-            d[2] = d[2][1];
-        }
-
-        return d[2] + ' ' + month[d[1]] + ' ' + d[0];
-    };
-
-    $F.format.date = function (date) {
-        if (!date) {
-            return '';
-        }
-
-        var d = date.split(/-/);
-        return d[2] + '-' + d[1] + '-' + d[0];
-    };
-
-    $F.format.period = function (period) {
-        if (/\d{4}-\d-\d/.test(period) === false) {
-            return period || '';
-        }
-
-        var p = period.split(/-/);
-        p[0] = p[0] + '/' + (parseInt(p[0]) + 1).toString();
-
-        if (p[1] == '1') {
-            p[1] = 'Odd';
-        } else if (p[1] == '2') {
-            p[1] = 'Even';
-        } else if (p[1] == '3') {
-            p[1] = 'Compact';
-        }
-
-        if (p[2] == '0') {
-            return p[0] + ' - ' + p[1];
-        }
-
-        return p[0] + ' - ' + p[1] + ' - ' + p[2];
-    };
-
-    $F.format.number = function (number) {
-        return $F.format.customNumber(number, '.', ',', ',', '.', false);
-    };
-
-    $F.format.cleanNumber = function (number) {
-        return $F.format.customNumber(number, '.', ',', ',', '.', true);
-    };
-
-    $F.format.customNumber = function (number, commaFrom, thousandFrom, commaTo, thousandTo, trimTrailingZero) {
-        commaFrom = commaFrom || '.';
-        thousandFrom = thousandFrom || ',';
-        commaTo = commaTo || commaFrom;
-        thousandTo = thousandTo || thousandFrom;
-        trimTrailingZero = trimTrailingZero || false;
-
-        if (number == null) {
-            return number;
-        }
-
-        var num = number.toString();
-
-        if (new RegExp("^-?[0-9" + thousandFrom + "]*(" + commaFrom + "[0-9]*)?$").test(num)) {
-            num = num.replace(thousandFrom, '').split(commaFrom);
-            var s2 = '', dot = '';
-
-            if (num[0].length !== 0) {
-                while (num[0].length > 0){
-                    if (num[0] == '-') {
-                        s2 = '-' + s2;
-                        break;
-                    }
-
-                    s2 = num[0].substr((num[0].length - 3 >= 0 ? num[0].length - 3 : 0), 3) + dot + s2;
-                    dot = thousandTo;
-                    num[0] = num[0].substr(0, num[0].length - 3);
-                }
-            } else {
-                s2 = '0';
-            }
-
-            if (num.length > 1) {
-                if (trimTrailingZero) {
-                    num[1] = num[1].replace(/0+$/, '');
-                }
-
-                if(num[1] != '') {
-                    s2 += commaTo + num[1];
-                }
-            }
-
-            num = s2;
-        }
-
-        return num;
-    };
-
-    $F.format.shortTime = function (time) {
-        var t = time.split(':');
-        return t[0] + ':' + t[1];
-    };
-
-    $F.format.longTime = function (time) {
-        var t = time.split(':');
-        return t[0] + ':' + t[1] + ':' + t[2].substr(0,2);
-    };
-
-    $F.format.dateTime = function (input, formatDateCallback, formatTimeCallback) {
-        formatDateCallback = formatDateCallback || 'Date';
-        formatTimeCallback = formatTimeCallback || 'ShortTime';
-
-        var t = input.split(' ');
-        var call = formatDateCallback;
-        var date = $F.format[call](t[0]);
-
-        var time = t[1];
-        if(formatTimeCallback != '') {
-            var callTime = formatTimeCallback;
-            time = $F.format[callTime](time);
-        }
-
-        return date + ' ' + time;
-    };
-})(jQuery, $F);
 /** Navigation for Formalhaut **/
 (function ($, $F) {
     "use strict";
@@ -483,7 +319,7 @@ var BM = {};
     var isFirstLoad = true;
     var executionStack = [];
     var scriptStack = [];
-    var triggerView = null;
+    var hashChangeHooks = [];
     var navPopup = null;
 
     /** Instance member **/
@@ -734,10 +570,12 @@ var BM = {};
 
                 // When all the HTML has been received, get the first popup
                 if (firstPopup) {
-                    nav.openPopup(req, firstPopup);
+                    nav.openPopup(req, firstPopup, true);
+                    return;
                 }
 
                 $F.nav.prepareHashModifier();
+                nav.runHashChangeHook();
 
                 return;
             }
@@ -746,8 +584,8 @@ var BM = {};
         });
     };
 
-    nav.openPopup = function openPopup(fullFirstHash, secondHash, parent) {
-        parent = parent || nav.currentSubView;
+    nav.openPopup = function openPopup(fullFirstHash, secondHash, first) {
+        first = first || false;
         var clearFirstLashHash = fullFirstHash.split('?');
         var firstHash = clearFirstLashHash[0];
 
@@ -762,7 +600,8 @@ var BM = {};
                     scrolling: 'no',
                     autoExpand: true,
                     afterClose: function () {
-                        $F.nav.setLocation('#/' + firstLastHash);
+                        navPopup = null;
+                        nav.closePopup();
                         $F.nav.fixHashModifier();
                     }
                 });
@@ -772,12 +611,18 @@ var BM = {};
                         console.warn('Trying to access non-popup enabled view.');
                     }
 
+                    // Create view accessor
                     popup.closePopup = nav.closePopup;
-                    popup.parent = parent;
+                    popup.parent = nav.currentSubView;
 
                     // Apply new default parameter
                     split = nav.splitParameter(secondHash, popup.defaultArguments);
                     popup.afterLoad(split.arg);
+
+                    if (first) {
+                        $F.nav.prepareHashModifier();
+                        nav.runHashChangeHook();
+                    }
                 }
             }, 'html');
         });
@@ -785,7 +630,10 @@ var BM = {};
 
     nav.closePopup = function closePopup() {
         $F.nav.setLocation('#/' + firstLastHash);
-        $F.popup.close();
+        if (navPopup !== null) {
+            navPopup.close();
+            navPopup = null;
+        }
     };
 
     nav.getDebugScript = function getDebugScript(url, callback) {
@@ -861,6 +709,12 @@ var BM = {};
         };
     };
 
+    nav.runHashChangeHook = function () {
+        for (var i = 0; i < hashChangeHooks.length; i++) {
+            hashChangeHooks[i]();
+        }
+    };
+
     /******** Formalhaut Engine Hook *********/
 
     // new way to load view script
@@ -894,6 +748,10 @@ var BM = {};
         });
 
         $F.nav.fixHashModifier(selector);
+    };
+
+    $F.nav.addHashChangeHook = function (hook) {
+        hashChangeHooks.push(hook);
     };
 
     // Inialization function
@@ -961,10 +819,7 @@ var BM = {};
                         if (h2 != '') {
                             nav.openPopup(firstLastHash, h2);
                         } else {
-                            if (navPopup !== null) {
-                                navPopup.close();
-                                navPopup = null;
-                            }
+                            nav.closePopup();
                         }
 
                         secondLastHash = h2;
@@ -996,6 +851,195 @@ var BM = {};
             }
         });
     }
+})(jQuery, $F);
+// Annotation Module for Formalhaut
+(function ($, $F) {
+    $F.nav.addHashChangeHook(function () {
+        $('[title]:not([data-f-title])').each(function () {
+            $(this).attr('data-f-title', $(this).attr('title'));
+        });
+
+        $('[data-f-title]').off('mouseenter.f-annotation').off('mouseleave.f-annotation');
+        $('[data-f-title]').on('mouseenter.f-annotation', function () {
+            var box = $('<div class="f-annotation-box"></div>')
+                .css('background', '#fff')
+                .css('border', '1px solid #333')
+                .css('padding', '5px').text($(this).attr('data-f-title'))
+                .css('position', 'absolute')
+                .css('left', $(this).offset().left + 'px')
+                .css('top', $(this).offset().top + 'px')
+                .css('z-index', '40000')
+                .css('max-width', '300px');
+            $('body').append(box);
+        }).on('mouseleave.f-annotation', function () {
+            $('.f-annotation-box').remove();
+        });
+    });
+
+})(jQuery, $F);
+// Error Handling Module for Formalhaut
+
+(function () {
+
+})();/** Formatting Toolbelt for Formalhaut **/
+(function ($, $F) {
+    "use strict";
+
+    $F.format = {};
+
+    $F.format.longDate = function (date) {
+        if (typeof date != 'string' || /^\d{4}-\d\d-\d\d$/.test(date) == false) {
+            return 'Invalid format (yyyy-mm-dd)';
+        }
+
+        var month = $F.config.get('months');
+        var d = date.split(/-/);
+        if(d[1][0]=='0'){
+            d[1] = parseInt(d[1][1]);
+        } else {
+            d[1] = parseInt(d[1]);
+        }
+
+        if(d[2][0]=='0'){
+            d[2] = d[2][1];
+        }
+        return d[2] + ' ' + month[d[1]] + ' ' + d[0];
+    };
+
+    $F.format.shortDate = function (date) {
+        if (typeof date != 'string' || /^\d{4}-\d\d-\d\d$/.test(date) == false) {
+            return 'Invalid format (yyyy-mm-dd)';
+        }
+
+        var month = $F.config.get('shortMonths');
+        var d = date.split(/-/);
+        if (d[1][0] == '0'){
+            d[1] = parseInt(d[1][1]);
+        } else {
+            d[1] = parseInt(d[1]);
+        }
+
+        if(d[2][0] == '0'){
+            d[2] = d[2][1];
+        }
+
+        return d[2] + ' ' + month[d[1]] + ' ' + d[0];
+    };
+
+    $F.format.date = function (date) {
+        if (!date) {
+            return '';
+        }
+
+        var d = date.split(/-/);
+        return d[2] + '-' + d[1] + '-' + d[0];
+    };
+
+    $F.format.period = function (period) {
+        if (/\d{4}-\d-\d/.test(period) === false) {
+            return period || '';
+        }
+
+        var p = period.split(/-/);
+        p[0] = p[0] + '/' + (parseInt(p[0]) + 1).toString();
+
+        if (p[1] == '1') {
+            p[1] = 'Odd';
+        } else if (p[1] == '2') {
+            p[1] = 'Even';
+        } else if (p[1] == '3') {
+            p[1] = 'Compact';
+        }
+
+        if (p[2] == '0') {
+            return p[0] + ' - ' + p[1];
+        }
+
+        return p[0] + ' - ' + p[1] + ' - ' + p[2];
+    };
+
+    $F.format.number = function (number) {
+        return $F.format.customNumber(number, '.', ',', ',', '.', false);
+    };
+
+    $F.format.cleanNumber = function (number) {
+        return $F.format.customNumber(number, '.', ',', ',', '.', true);
+    };
+
+    $F.format.customNumber = function (number, commaFrom, thousandFrom, commaTo, thousandTo, trimTrailingZero) {
+        commaFrom = commaFrom || '.';
+        thousandFrom = thousandFrom || ',';
+        commaTo = commaTo || commaFrom;
+        thousandTo = thousandTo || thousandFrom;
+        trimTrailingZero = trimTrailingZero || false;
+
+        if (number == null) {
+            return number;
+        }
+
+        var num = number.toString();
+
+        if (new RegExp("^-?[0-9" + thousandFrom + "]*(" + commaFrom + "[0-9]*)?$").test(num)) {
+            num = num.replace(thousandFrom, '').split(commaFrom);
+            var s2 = '', dot = '';
+
+            if (num[0].length !== 0) {
+                while (num[0].length > 0){
+                    if (num[0] == '-') {
+                        s2 = '-' + s2;
+                        break;
+                    }
+
+                    s2 = num[0].substr((num[0].length - 3 >= 0 ? num[0].length - 3 : 0), 3) + dot + s2;
+                    dot = thousandTo;
+                    num[0] = num[0].substr(0, num[0].length - 3);
+                }
+            } else {
+                s2 = '0';
+            }
+
+            if (num.length > 1) {
+                if (trimTrailingZero) {
+                    num[1] = num[1].replace(/0+$/, '');
+                }
+
+                if(num[1] != '') {
+                    s2 += commaTo + num[1];
+                }
+            }
+
+            num = s2;
+        }
+
+        return num;
+    };
+
+    $F.format.shortTime = function (time) {
+        var t = time.split(':');
+        return t[0] + ':' + t[1];
+    };
+
+    $F.format.longTime = function (time) {
+        var t = time.split(':');
+        return t[0] + ':' + t[1] + ':' + t[2].substr(0,2);
+    };
+
+    $F.format.dateTime = function (input, formatDateCallback, formatTimeCallback) {
+        formatDateCallback = formatDateCallback || 'Date';
+        formatTimeCallback = formatTimeCallback || 'ShortTime';
+
+        var t = input.split(' ');
+        var call = formatDateCallback;
+        var date = $F.format[call](t[0]);
+
+        var time = t[1];
+        if(formatTimeCallback != '') {
+            var callTime = formatTimeCallback;
+            time = $F.format[callTime](time);
+        }
+
+        return date + ' ' + time;
+    };
 })(jQuery, $F);
 /** Pagination system for Formalhaut **/
 (function ($, $F) {
@@ -1130,7 +1174,8 @@ var BM = {};
     var activePopup = null,
         usePlaceholder = false,
         placeholderClone,
-        objOption;
+        objOption,
+        numPopup = 0;
 
     // Create popup prototype
     function PopupObject(obj) {
@@ -1148,15 +1193,23 @@ var BM = {};
         var h = $(window).height();
         var self = this;
 
+        $('body').css({
+            position : 'relative',
+            overflow : 'hidden'
+        });
+
         var divBorder = $('<div class="popupborder"></div>').css({
             width : obj.width,
-            height : obj.height,
             background : '#fff',
             zIndex : '11005',
             position : 'absolute',
             border : '5px solid #ccc',
             padding : '10px',
             borderRadius : '10px'
+        });
+
+        divBorder.click(function (e) {
+            e.stopPropagation();
         });
 
         var bg = $('<div></div>').css({
@@ -1182,13 +1235,27 @@ var BM = {};
         }
 
         this.wrap = $('<div></div>').css({
-            width : w + 'px',
-            height : h + 'px',
             position : 'fixed',
             top : '0',
             left : '0',
             zIndex : '10999',
-            opacity : '0'
+            opacity : '0',
+            width: w + 'px',
+            height: h + 'px'
+        }).click(function (e) {
+            e.stopPropagation();
+        });
+
+        var innerWrap = $('<div class="popupinnerwrap"></div>').css({
+            overflow: 'auto',
+            position: 'absolute',
+            zIndex: '11001',
+            width: w + 'px',
+            height: h + 'px'
+        });
+
+        var ndInnerWrap = $('<div class="popupndinnerwrap"></div>').css({
+            padding: '30px 0'
         });
 
         // add event onclick that will remove the popup if it's not a modal
@@ -1214,7 +1281,7 @@ var BM = {};
                 });
             });
 
-            bg.click(function() {
+            innerWrap.click(function () {
                 self.close({
                     afterClose : obj.afterClose
                 });
@@ -1224,12 +1291,11 @@ var BM = {};
         }
 
         divBorder.append(divContent);
-        this.wrap.append(bg).append(divBorder);
+        ndInnerWrap.append(divBorder);
+        innerWrap.append(ndInnerWrap);
+        this.wrap.append(bg).append(innerWrap);
 
-        $('body').css({
-            position : 'relative',
-            overflow : 'hidden'
-        }).append(this.wrap);
+        $('body').append(this.wrap);
 
         this.wrap.animate({
             opacity : 1
@@ -1259,13 +1325,17 @@ var BM = {};
 
     PopupObject.prototype.close = function (param) {
         param = param || {};
+
+        // This part need more test before released to public, remain commented for awhile
+//        if ($('form', this.wrap).length !== 0) {
+//            if (!confirm('Do you really want to leave the form?')) {
+//                return;
+//            }
+//        }
+
         if (param.afterClose) {
             param.afterClose();
         }
-
-        $('body').css({
-            overflow : ''
-        });
 
         this.wrap.animate({
             opacity : '0'
@@ -1273,11 +1343,20 @@ var BM = {};
             $(this).hide();
             $(this).remove();
         });
+
+        --numPopup;
+
+        if (numPopup == 0) {
+            $('body').css({
+                overflow : ''
+            });
+        }
     };
 
     $F.popup = {};
 
     $F.popup.create = function (obj) {
+        ++numPopup;
         return new PopupObject(obj);
     };
 
@@ -1293,9 +1372,6 @@ var BM = {};
 
     $F.popup.close = function (param) {
         param = param || {};
-        if (param.afterClose) {
-            param.afterClose();
-        }
 
         if (activePopup != null) {
             activePopup.close(param);
@@ -1321,12 +1397,21 @@ var BM = {};
             height : h + 'px'
         });
 
-        var divBorder = $('.popupborder', wrap);
-        var divContent = $('.popupcontent', divBorder);
-        divBorder.css({
-            width : objOption.width,
-            height : objOption.height
+        $('.popupinnerwrap', wrap).css({
+            width: w + 'px',
+            height: h + 'px'
         });
+
+        var divBorder = $('.popupborder', wrap);
+        var divNdInnerWrap = $('.popupndinnerwrap', wrap);
+
+        divBorder.css({
+            width : objOption.width
+        });
+
+        divNdInnerWrap.css({
+            height: (divBorder.height() + 30) + 'px'
+        })
 
         if (param.width != null) {
             divBorder.css('width', param.width);
@@ -1335,26 +1420,16 @@ var BM = {};
         var wd = divBorder.width();
         var wh = divBorder.height();
 
-        if (wh >= h - 80) {
-            wh = h - 80;
-            divBorder.css({
-                height: wh
-            });
-
-            divContent.css({
-                overflow: 'auto',
-                height: wh - 10
-            });
-        } else {
-            divBorder.css({
-                height: 'auto'
-            });
-        }
-
         divBorder.css({
             left: (w / 2 - wd / 2 - 15) + 'px',
-            top: (h / 2 - wh / 2 - 15) + 'px'
+            height: 'auto'
         });
+
+        if (wh < w) {
+            divBorder.css({
+                top: (h / 2 - wh / 2 - 15) + 'px'
+            });
+        }
     }
 })(jQuery, $F);
 /** Data serialization for Formalhaut **/

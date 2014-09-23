@@ -10,7 +10,7 @@
     var isFirstLoad = true;
     var executionStack = [];
     var scriptStack = [];
-    var triggerView = null;
+    var hashChangeHooks = [];
     var navPopup = null;
 
     /** Instance member **/
@@ -261,10 +261,12 @@
 
                 // When all the HTML has been received, get the first popup
                 if (firstPopup) {
-                    nav.openPopup(req, firstPopup);
+                    nav.openPopup(req, firstPopup, true);
+                    return;
                 }
 
                 $F.nav.prepareHashModifier();
+                nav.runHashChangeHook();
 
                 return;
             }
@@ -273,8 +275,8 @@
         });
     };
 
-    nav.openPopup = function openPopup(fullFirstHash, secondHash, parent) {
-        parent = parent || nav.currentSubView;
+    nav.openPopup = function openPopup(fullFirstHash, secondHash, first) {
+        first = first || false;
         var clearFirstLashHash = fullFirstHash.split('?');
         var firstHash = clearFirstLashHash[0];
 
@@ -289,7 +291,8 @@
                     scrolling: 'no',
                     autoExpand: true,
                     afterClose: function () {
-                        $F.nav.setLocation('#/' + firstLastHash);
+                        navPopup = null;
+                        nav.closePopup();
                         $F.nav.fixHashModifier();
                     }
                 });
@@ -299,12 +302,18 @@
                         console.warn('Trying to access non-popup enabled view.');
                     }
 
+                    // Create view accessor
                     popup.closePopup = nav.closePopup;
-                    popup.parent = parent;
+                    popup.parent = nav.currentSubView;
 
                     // Apply new default parameter
                     split = nav.splitParameter(secondHash, popup.defaultArguments);
                     popup.afterLoad(split.arg);
+
+                    if (first) {
+                        $F.nav.prepareHashModifier();
+                        nav.runHashChangeHook();
+                    }
                 }
             }, 'html');
         });
@@ -312,7 +321,10 @@
 
     nav.closePopup = function closePopup() {
         $F.nav.setLocation('#/' + firstLastHash);
-        $F.popup.close();
+        if (navPopup !== null) {
+            navPopup.close();
+            navPopup = null;
+        }
     };
 
     nav.getDebugScript = function getDebugScript(url, callback) {
@@ -388,6 +400,12 @@
         };
     };
 
+    nav.runHashChangeHook = function () {
+        for (var i = 0; i < hashChangeHooks.length; i++) {
+            hashChangeHooks[i]();
+        }
+    };
+
     /******** Formalhaut Engine Hook *********/
 
     // new way to load view script
@@ -421,6 +439,10 @@
         });
 
         $F.nav.fixHashModifier(selector);
+    };
+
+    $F.nav.addHashChangeHook = function (hook) {
+        hashChangeHooks.push(hook);
     };
 
     // Inialization function
@@ -488,10 +510,7 @@
                         if (h2 != '') {
                             nav.openPopup(firstLastHash, h2);
                         } else {
-                            if (navPopup !== null) {
-                                navPopup.close();
-                                navPopup = null;
-                            }
+                            nav.closePopup();
                         }
 
                         secondLastHash = h2;
