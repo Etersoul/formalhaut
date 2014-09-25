@@ -258,7 +258,7 @@
 
         if (wh < w) {
             divBorder.css({
-                top: (h / 2 - wh / 2 - 15) + 'px'
+                top: '30px'
             });
         }
     }
