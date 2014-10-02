@@ -1175,11 +1175,13 @@ var BM = {};
         usePlaceholder = false,
         placeholderClone,
         objOption,
-        numPopup = 0;
+        countPopup = 0,
+        popupStack = {};
 
     // Create popup prototype
-    function PopupObject(obj) {
+    function PopupObject(obj, id) {
         this.wrap = null;
+        this.id = id || Math.round(Math.random() * 65536);
 
         obj.content = obj.content || '';
         obj.width = obj.width || 'auto';
@@ -1321,6 +1323,14 @@ var BM = {};
                 subtree: true
             });
         }
+
+        // Close popup if it's have the same identifier in the stack
+        if (popupStack[id]) {
+            popupStack[id].close();
+        }
+
+        // Push to stack again
+        popupStack[id] = this;
     }
 
     PopupObject.prototype.close = function (param) {
@@ -1344,9 +1354,9 @@ var BM = {};
             $(this).remove();
         });
 
-        --numPopup;
+        delete popupStack[this.id];
 
-        if (numPopup == 0) {
+        if (Object.keys(popupStack).length == 0) {
             $('body').css({
                 overflow : ''
             });
@@ -1356,8 +1366,9 @@ var BM = {};
     $F.popup = {};
 
     $F.popup.create = function (obj) {
-        ++numPopup;
-        return new PopupObject(obj);
+        ++countPopup;
+
+        var p = new PopupObject(obj, countPopup);
     };
 
     // For the static popup
@@ -1367,7 +1378,7 @@ var BM = {};
             activePopup = null;
         }
 
-        activePopup = new PopupObject(obj);
+        activePopup = $F.popup.create(obj);
     };
 
     $F.popup.close = function (param) {
