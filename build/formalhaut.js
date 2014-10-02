@@ -1369,6 +1369,7 @@ var BM = {};
         ++countPopup;
 
         var p = new PopupObject(obj, countPopup);
+        return p;
     };
 
     // For the static popup
