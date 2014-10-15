@@ -1015,11 +1015,18 @@ var BM = {};
     };
 
     $F.format.shortTime = function (time) {
+        if (!time) {
+            return '';
+        }
+
         var t = time.split(':');
         return t[0] + ':' + t[1];
     };
 
     $F.format.longTime = function (time) {
+        if (!time) {
+            return '';
+        }
         var t = time.split(':');
         return t[0] + ':' + t[1] + ':' + t[2].substr(0,2);
     };
