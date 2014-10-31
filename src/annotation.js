@@ -1,9 +1,9 @@
 // Annotation Module for Formalhaut
 (function ($, $F) {
     $F.nav.addHashChangeHook(function () {
-        $('[title]:not([data-f-title])').each(function () {
+        /*$('[title]:not([data-f-title])').each(function () {
             $(this).attr('data-f-title', $(this).attr('title'));
-        });
+        });*/
 
         $('[data-f-title]').off('mouseenter.f-annotation').off('mouseleave.f-annotation');
         $('[data-f-title]').on('mouseenter.f-annotation', function () {

@@ -10,14 +10,12 @@
             var cleanName = n.name.replace(/\[.*\]$/, '');
 
             if (typeof json[cleanName] == 'undefined') {
-                if (/\[\]$/.test(n.name)) {
+                if (/\[\]/.test(n.name)) {
                     json[cleanName] = [n.value];
-                } else if (/\[.*\]$/.test(n.name)) {
+                } else if (/\[.*?\]/.test(n.name)) {
                     json[cleanName] = {};
 
-                    var reg = /\[(.*)\]$/;
-                    var key = reg.exec(n.name);
-                    json[cleanName][key[1]] = n.value;
+                    iterateObject(json[cleanName], n.name, n.value)
                 } else {
                     json[cleanName] = n.value;
                 }
@@ -26,9 +24,7 @@
                     if (json[cleanName] instanceof Array) {
                         json[cleanName].push(n.value);
                     } else {
-                        var reg = /\[(.*)\]$/;
-                        var key = reg.exec(n.name);
-                        json[cleanName][key[1]] = n.value;
+                        iterateObject(json[cleanName], n.name, n.value);
                     }
                 } else {
                     var temp = json[cleanName];
@@ -43,5 +39,24 @@
 
         return json;
     };
+
+    function iterateObject(ref, name, value) {
+        var reg = /\[(.*?)\]/g;
+        var key;
+        var keyBefore = null;
+        var refBefore = null;
+        while (key = reg.exec(name)) {
+            if (typeof ref[key[1]] == 'undefined') {
+                ref[key[1]] = {}
+            }
+
+            refBefore = ref;
+            keyBefore = key[1];
+
+            ref = ref[key[1]];
+        }
+
+        refBefore[keyBefore] = value;
+    }
 
 })(jQuery, $F);
