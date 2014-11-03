@@ -887,8 +887,11 @@ var BM = {};
 
     $F.format = {};
 
-    $F.format.longDate = function (date) {
+    $F.format.longDate = function (date, options) {
         if (typeof date != 'string' || /^\d{4}-\d\d-\d\d$/.test(date) == false) {
+            if (options && options.bypass) {
+                return date;
+            }
             return 'Invalid format (yyyy-mm-dd)';
         }
 
@@ -906,8 +909,11 @@ var BM = {};
         return d[2] + ' ' + month[d[1]] + ' ' + d[0];
     };
 
-    $F.format.shortDate = function (date) {
+    $F.format.shortDate = function (date, options) {
         if (typeof date != 'string' || /^\d{4}-\d\d-\d\d$/.test(date) == false) {
+            if (options && options.bypass) {
+                return date;
+            }
             return 'Invalid format (yyyy-mm-dd)';
         }
 
@@ -926,9 +932,12 @@ var BM = {};
         return d[2] + ' ' + month[d[1]] + ' ' + d[0];
     };
 
-    $F.format.date = function (date) {
-        if (!date) {
-            return '';
+    $F.format.date = function (date, options) {
+        if (typeof date != 'string' || /^\d{4}-\d\d-\d\d$/.test(date) == false) {
+            if (options && options.bypass) {
+                return date;
+            }
+            return 'Invalid format (yyyy-mm-dd)';
         }
 
         var d = date.split(/-/);
