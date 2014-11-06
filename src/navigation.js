@@ -211,6 +211,7 @@
     nav.getHTML = function getHTML(q, firstPopup) {
         if (executionStack.length == 0) {
             $F.nav.fixHashModifier();
+            $F.initInput();
             return;
         }
 
@@ -268,6 +269,8 @@
                 $F.nav.prepareHashModifier();
                 nav.runHashChangeHook();
 
+                $F.initInput();
+
                 return;
             }
 
@@ -312,6 +315,7 @@
 
                     if (first) {
                         $F.nav.prepareHashModifier();
+                        $F.initInput();
                         nav.runHashChangeHook();
                     }
                 }
