@@ -54,7 +54,7 @@ var $F = ($F) ? $F : null;
             if (opt.progress === true) {
                 if (ajaxType.toLowerCase() === 'post') {
                     popup = $F.popup.create({
-                        content: '<p style="font-size: 14px">Processing request. Please wait until this message dissapear.',
+                        content: '<p style="font-size: 14px">Processing request. Please wait until this message disappear.',
                         modal: true
                     });
                 }

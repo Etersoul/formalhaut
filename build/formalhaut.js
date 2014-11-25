@@ -54,7 +54,7 @@ var $F = ($F) ? $F : null;
             if (opt.progress === true) {
                 if (ajaxType.toLowerCase() === 'post') {
                     popup = $F.popup.create({
-                        content: '<p style="font-size: 14px">Processing request. Please wait until this message dissapear.',
+                        content: '<p style="font-size: 14px">Processing request. Please wait until this message disappear.',
                         modal: true
                     });
                 }
@@ -464,7 +464,7 @@ var BM = {};
         }
 
         try {
-            getDebug($F.config.get('viewUri') + opt.hash + '.js', function () {
+            var localDebug = getDebug($F.config.get('viewUri') + opt.hash + '.js', function () {
                 // TODO: remove compatibility layer
                 var view = $F.compat.subViewInit(nav.subView);
 
@@ -504,16 +504,25 @@ var BM = {};
                     firstPopup: opt.firstPopup
                 });
             });
+
+            if (localDebug != null && typeof localDebug.error === 'function') {
+                localDebug.fail(function (e, x, ex) {
+                    console.log(ex);
+                    if (e.status == 404) {
+                        $F.popup.show({
+                            content: '<h2 style="font-size:20px;margin: 0 0 20px 0;text-align:center">404 Error: File not found</h2>' +
+                                '<p style="width: 700px;margin:20px 0;line-height:18px;">You might be get here by entering wrong address in the address bar, clicking a link within application, or doing something that might trigger error. Please inform the developer if this problem persists and occured repeatedly.</p>' +
+                                '<div style="text-align:center;">' +
+                                '<a href="javascript:history.go(-1);$F.popup.close();" class="button">Return</a>' +
+                                '<a href="#/bug-report?problem=404" class="button">Report Problem</a>' +
+                                '<a href="." class="button">Return to dashboard.</a>' +
+                                '</div>'
+                        });
+                    }
+                });
+            }
         } catch (e) {
-            $F.popup.show({
-                content: '<h2 style="font-size:20px;margin: 0 0 20px 0;text-align:center">404 Error: File not found</h2>' +
-                    '<p style="width: 700px;margin:20px 0;line-height:18px;">You might be get here by entering wrong address in the address bar, clicking a link within application, or doing something that might trigger error. Please inform the developer if this problem persists and occured repeatedly.</p>' +
-                    '<div style="text-align:center;">' +
-                    '<a href="javascript:history.go(-1);$F.popup.close();" class="button">Return</a>' +
-                    '<a href="#/bug-report?problem=404" class="button">Report Problem</a>' +
-                    '<a href="." class="button">Return to dashboard.</a>' +
-                    '</div>'
-            });
+            throw e;
         }
     };
 
@@ -644,6 +653,8 @@ var BM = {};
         var script = $('<script></script>').attr('src', url);
         $('head').append(script);
         callback();
+
+        return null;
     };
 
     nav.splitParameter = function splitParameter(url, defaultArguments) {
@@ -884,7 +895,24 @@ var BM = {};
 // Error Handling Module for Formalhaut
 
 (function () {
-
+    window.onerror = function (msg, url, line) {
+        if (typeof $F.service == 'function') {
+            $F.service({
+                url: 'error/reporting',
+                type: 'post',
+                data: JSON.stringify({
+                    error: msg,
+                    url: url,
+                    line: line
+                }),
+                success: function (data) {
+                    $F.popup.show({
+                        content: 'There is an error within the application. The error has been informed to the developer and will be fixed immediately.'
+                    });
+                }
+            });
+        }
+    };
 })();/** Formatting Toolbelt for Formalhaut **/
 (function ($, $F) {
     "use strict";
@@ -1067,10 +1095,10 @@ var BM = {};
 
     $F.initInput = function () {
         $('[data-f-input=time]').not('.f-input-time').addClass('f-input-time').on('keyup.inputtime', function (e) {
-            console.log(e.which);
             if (e.which == 8 || e.which == 46) {
                 return;
             }
+
             var val = $(this).val();
             if (val.length == 3) {
                 $(this).val(val.substr(0, 2) + ':' + val.substr(2, 1));
