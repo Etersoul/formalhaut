@@ -607,7 +607,7 @@ var BM = {};
         $.getScript('view/' + base[0] +'/' + split.hash + '.js', function () {
             var popup = $F.compat.popupSubViewInit(nav.subView);
 
-            $.get('view/' + base[0] + '/' + split.hash + '.html', function (data) {
+            $.get('view/' + base[0] + '/' + split.hash + '.html?_=' + new Date().getTime(), function (data) {
                 navPopup = $F.popup.create({
                     content: data,
                     scrolling: 'no',
