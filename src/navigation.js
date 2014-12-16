@@ -244,7 +244,8 @@
              rel = view.rel;
         }
 
-        $('#' + rel).load($F.config.get('viewUri') + req + '.html', function () {
+        var time = new Date().getTime();
+        $('#' + rel).load($F.config.get('viewUri') + req + '.html?_=' + time, function () {
             // Get the default parameter
             var defaultArg = null;
             if (typeof view.defaultArguments !== 'undefined') {
