@@ -241,7 +241,7 @@ var $F = ($F) ? $F : null;
     };
     
     $F.config.get = function (key) {
-        return localConfig[key];
+        return localConfig[key] ? localConfig[key] : null;
     };
     
     $F.config.hook = function (fn) {
@@ -1318,6 +1318,13 @@ var BM = {};
         objOption,
         countPopup = 0,
         popupStack = {};
+        
+    var config;
+
+    // Load the configuration data
+    $F.config.hook(function () {
+        config = $F.config.get('popup');
+    });
 
     // Create popup prototype
     function PopupObject(obj, id) {
@@ -1341,29 +1348,15 @@ var BM = {};
             overflow : 'hidden'
         });
 
-        var divBorder = $('<div class="popupborder"></div>').css({
-            width : obj.width,
-            background : '#fff',
-            zIndex : '11005',
-            position : 'absolute',
-            border : '5px solid #ccc',
-            padding : '10px',
-            borderRadius : '10px'
+        var divBorder = $('<div class="popup-border"></div>').css({
+            width : obj.width
         });
 
         divBorder.click(function (e) {
             e.stopPropagation();
         });
 
-        var bg = $('<div></div>').css({
-            width : '100%',
-            height : '100%',
-            background : 'rgba(0,0,0,0.7)',
-            position : 'absolute',
-            zIndex : '11000',
-            top : '0',
-            left : '0'
-        });
+        var bg = $('<div class="popup-background"></div>');
 
         var divContent;
         if (obj.content instanceof $) {
@@ -1372,53 +1365,29 @@ var BM = {};
 
             obj.content.before('<div id="popup-placeholder" style="display:none"></div>');
             obj.content.show();
-            divContent = $('<div class="popupcontent"></div>').append(obj.content);
+            divContent = $('<div class="popup-content"></div>').append(obj.content);
         } else {
-            divContent = $('<div class="popupcontent"></div>').html(obj.content);
+            divContent = $('<div class="popup-content"></div>').html(obj.content);
         }
 
-        this.wrap = $('<div></div>').css({
-            position : 'fixed',
-            top : '0',
-            left : '0',
-            zIndex : '10999',
-            opacity : '0',
+        this.wrap = $('<div class="popup-full-wrap popup"></div>').css({
             width: w + 'px',
             height: h + 'px'
         }).click(function (e) {
             e.stopPropagation();
         });
 
-        var innerWrap = $('<div class="popupinnerwrap"></div>').css({
-            overflow: 'auto',
-            position: 'absolute',
-            zIndex: '11001',
+        var innerWrap = $('<div class="popup-inner-wrap"></div>').css({
             width: w + 'px',
             height: h + 'px'
         });
 
-        var ndInnerWrap = $('<div class="popupndinnerwrap"></div>').css({
-            padding: '30px 0'
-        });
+        var ndInnerWrap = $('<div class="popup-second-inner-wrap"></div>');
 
-        // add event onclick that will remove the popup if it's not a modal
-        // popup
+        // add event onclick that will remove the popup if it's not a modal popup
+        var closeButton = null;
         if (!obj.modal) {
-            var del = $('<div></div>').css({
-                width : '20px',
-                height : '17px',
-                position : 'absolute',
-                top : '-15px',
-                right : '10px',
-                background : '#333',
-                borderRadius : '14px',
-                border : '4px solid #ccc',
-                color : '#fff',
-                fontSize : '14px',
-                textAlign : 'center',
-                paddingBottom : '2px',
-                cursor : 'pointer'
-            }).html('X').click(function() {
+            closeButton = $('<div class="popup-close-button"></div>').html('X').click(function() {
                 self.close({
                     afterClose : obj.afterClose
                 });
@@ -1430,7 +1399,7 @@ var BM = {};
                 });
             });
 
-            divBorder.append(del);
+            divBorder.append(closeButton);
         }
 
         divBorder.append(divContent);
@@ -1444,8 +1413,31 @@ var BM = {};
             opacity : 1
         }, 250);
 
-        // reposition the popup
+        // Reposition the popup
         var scopeWrap = this.wrap;
+        
+        // Insert configuration class
+        if (config) {
+            if (config.popupClass) {
+                this.wrap.addClass(config.popupClass);
+            }
+            
+            if (config.borderClass) {
+                divBorder.addClass(config.borderClass);
+            }
+            
+            if (config.backgroundClass) {
+                bg.addClass(config.backgroundClass);
+            }
+            
+            if (config.closeButtonClass && closeButton) {
+                closeButton.addclass(config.closeButtonClass);
+            }
+            
+            if (config.innerWrapClass && innerWrapClass) {
+                innerWrap.addClass(config.innerWrapClass);
+            }
+        }
 
         resizePopup({}, this.wrap);
         $(window).on('resize.popup', function () {
@@ -1555,8 +1547,8 @@ var BM = {};
             height: h + 'px'
         });
 
-        var divBorder = $('.popupborder', wrap);
-        var divNdInnerWrap = $('.popupndinnerwrap', wrap);
+        var divBorder = $('.popup-border', wrap);
+        var divNdInnerWrap = $('.popup-second-inner-wrap', wrap);
 
         divBorder.css({
             width : objOption.width

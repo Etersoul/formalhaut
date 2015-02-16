@@ -15,7 +15,7 @@
     };
     
     $F.config.get = function (key) {
-        return localConfig[key];
+        return localConfig[key] ? localConfig[key] : null;
     };
     
     $F.config.hook = function (fn) {
