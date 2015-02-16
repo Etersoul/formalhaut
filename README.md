@@ -1,2 +1,3 @@
-# formalhaut
-Formalhaut Framework
+# Formalhaut Framework
+
+Agile JavaScript framework
