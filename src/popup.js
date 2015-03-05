@@ -8,7 +8,7 @@
         objOption,
         countPopup = 0,
         popupStack = {};
-        
+
     var config;
 
     // Load the configuration data
@@ -105,25 +105,25 @@
 
         // Reposition the popup
         var scopeWrap = this.wrap;
-        
+
         // Insert configuration class
         if (config) {
             if (config.popupClass) {
                 this.wrap.addClass(config.popupClass);
             }
-            
+
             if (config.borderClass) {
                 divBorder.addClass(config.borderClass);
             }
-            
+
             if (config.backgroundClass) {
                 bg.addClass(config.backgroundClass);
             }
-            
+
             if (config.closeButtonClass && closeButton) {
                 closeButton.addclass(config.closeButtonClass);
             }
-            
+
             if (config.innerWrapClass && innerWrapClass) {
                 innerWrap.addClass(config.innerWrapClass);
             }
@@ -232,7 +232,7 @@
             height : h + 'px'
         });
 
-        $('.popupinnerwrap', wrap).css({
+        $('.popup-inner-wrap', wrap).css({
             width: w + 'px',
             height: h + 'px'
         });

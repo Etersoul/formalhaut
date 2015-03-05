@@ -1,3 +1,5 @@
+/* global $F */
+
 /** Navigation for Formalhaut **/
 (function ($, $F) {
     "use strict";
@@ -12,6 +14,8 @@
     var scriptStack = [];
     var hashChangeHooks = [];
     var navPopup = null;
+    var globalBeforeLoad = null;
+    var globalAfterLoad = null;
 
     /** Instance member **/
     var nav = {};
@@ -35,12 +39,12 @@
     $F.nav.TRIGGER_SCOPE_FULL = 'all';
 
     // Get current hash in the URL
-    $F.nav.getCurrentHash = function getCurrentHash() {
+    $F.nav.getCurrentHash = function () {
         return location.hash;
     };
 
     // Get last hash
-    $F.nav.getLastHash = function getLashHash(breakHash) {
+    $F.nav.getLastHash = function (breakHash) {
         if (breakHash) {
             var hash = breakHash.split('.');
             return {
@@ -53,21 +57,21 @@
     };
 
     // Get first section of last hash
-    $F.nav.getFirstLastHash = function getFirstLastHash() {
+    $F.nav.getFirstLastHash = function () {
         return firstLastHash;
     };
 
     // Get second section of last hash (argument)
-    $F.nav.getLastParam = function getLastParam() {
+    $F.nav.getLastParam = function () {
         return lastParam;
     };
 
     // Set the location (hash) to the specific path
-    $F.nav.setLocation = function setLocation(path) {
+    $F.nav.setLocation = function (path) {
         location.hash = path;
     };
 
-    $F.nav.setNamedParam = function setNamedParam(param, forceTrigger) {
+    $F.nav.setNamedParam = function (param, forceTrigger) {
         forceTrigger = forceTrigger || false;
 
         location.href = $F.util.buildUrl('#/' + firstLastHashNoParam, param);
@@ -78,7 +82,7 @@
     };
 
     // Set the location (hash) to the specific path, remove the previos entry from history
-    $F.nav.rewriteLocation = function rewriteLocation(path) {
+    $F.nav.rewriteLocation = function (path) {
         if(window.history && window.history.replaceState) {
             window.history.replaceState({}, null, path);
 
@@ -90,15 +94,25 @@
     };
 
     // Force refresh the current view, including reload the script and the html
-    $F.nav.refreshSubView = function refreshView(obj) {
+    $F.nav.refreshSubView = function (obj) {
         subView = null;
         nav.getScript({
             hash: location.hash
         });
     };
 
+    // Add to global beforeload
+    $F.nav.addBeforeLoad = function (func) {
+        globalBeforeLoad = func;
+    };
+
+    // Add to global afterload
+    $F.nav.addAfterLoad = function (func) {
+        globalAfterLoad = func;
+    };
+
     // Reset the navigation engine
-    nav.reset = function navInit() {
+    nav.reset = function () {
         nav.rel = '';
         nav.subView = null;
         nav.currentSubView = null;
@@ -106,7 +120,7 @@
         executionStack = [];
     };
 
-    nav.getScript = function getScript(opt) {
+    nav.getScript = function (opt) {
         // take the previous hash, and iterate from the fullest path to the only first part of path.
 
         // check if we have reach the parent module, and stop fetching script immediately if true
@@ -117,7 +131,7 @@
                     var l = scriptStack[scriptStack.length - 1].req;
 
                     // if the stack string length is less than the current iteration hash string length, stop because the result will always no
-                    if (l.length < opt.hash.length || l == opt.hash) {
+                    if (l.length < opt.hash.length || l === opt.hash) {
                         break;
                     }
 
@@ -173,7 +187,7 @@
                 };
 
                 var required = '';
-                if (typeof view.require != 'undefined') {
+                if (typeof view.require !== 'undefined') {
                     required = view.require;
                 }
 
@@ -196,10 +210,10 @@
                 });
             });
 
-            if (localDebug != null && typeof localDebug.error === 'function') {
+            if (localDebug !== null && typeof localDebug.error === 'function') {
                 localDebug.fail(function (e, x, ex) {
                     console.log(ex);
-                    if (e.status == 404) {
+                    if (e.status === 404) {
                         $F.popup.show({
                             content: '<h2 style="font-size:20px;margin: 0 0 20px 0;text-align:center">404 Error: File not found</h2>' +
                                 '<p style="width: 700px;margin:20px 0;line-height:18px;">You might be get here by entering wrong address in the address bar, clicking a link within application, or doing something that might trigger error. Please inform the developer if this problem persists and occured repeatedly.</p>' +
@@ -217,8 +231,8 @@
         }
     };
 
-    nav.getHTML = function getHTML(q, firstPopup) {
-        if (executionStack.length == 0) {
+    nav.getHTML = function (q, firstPopup) {
+        if (executionStack.length === 0) {
             $F.nav.fixHashModifier();
             $F.initInput();
             return;
@@ -245,7 +259,10 @@
         }
 
         var time = new Date().getTime();
-        $('#' + rel).load($F.config.get('viewUri') + req + '.html?_=' + time, function () {
+        $.get($F.config.get('viewUri') + req + '.html?_=' + time, function (html) {
+            var $html = $(html);
+            $('#' + rel).empty().append($html);
+
             // Get the default parameter
             var defaultArg = null;
             if (typeof view.defaultArguments !== 'undefined') {
@@ -255,12 +272,20 @@
             // Split the URL into parameter and other things, then trigger the afterLoad event
             var par = nav.splitParameter($F.nav.getCurrentHash().substr(2), defaultArg);
 
+            if (globalBeforeLoad) {
+                globalBeforeLoad(view, $html);
+            }
+
             view.afterLoad(par.arg);
+
+            if (globalAfterLoad) {
+                globalAfterLoad(view, $html);
+            }
 
             document.title = view.title;
 
-            if (executionStack.length == 0) {
-                if (typeof view.onDefaultChild == 'function') {
+            if (executionStack.length === 0) {
+                if (typeof view.onDefaultChild === 'function') {
                     view.onDefaultChild(par.arg);
                 }
 
@@ -288,7 +313,7 @@
         });
     };
 
-    nav.openPopup = function openPopup(fullFirstHash, secondHash, first) {
+    nav.openPopup = function (fullFirstHash, secondHash, first) {
         first = first || false;
         var clearFirstLashHash = fullFirstHash.split('?');
         var firstHash = clearFirstLashHash[0];
@@ -299,8 +324,9 @@
             var popup = $F.compat.popupSubViewInit(nav.subView);
 
             $.get('view/' + base[0] + '/' + split.hash + '.html?_=' + new Date().getTime(), function (data) {
+                var popupHtml = $(data);
                 navPopup = $F.popup.create({
-                    content: data,
+                    content: popupHtml,
                     scrolling: 'no',
                     autoExpand: true,
                     afterClose: function () {
@@ -310,7 +336,7 @@
                     }
                 });
 
-                if(typeof popup == "object") {
+                if(typeof popup === "object") {
                     if (!popup.isPopup) {
                         console.warn('Trying to access non-popup enabled view.');
                     }
@@ -321,7 +347,16 @@
 
                     // Apply new default parameter
                     split = nav.splitParameter(secondHash, popup.defaultArguments);
+
+                    if (globalBeforeLoad) {
+                        globalBeforeLoad(popup, popupHtml);
+                    }
+
                     popup.afterLoad(split.arg);
+
+                    if (globalAfterLoad) {
+                        globalAfterLoad(popup, popupHtml);
+                    }
 
                     if (first) {
                         $F.nav.prepareHashModifier();
@@ -333,7 +368,7 @@
         });
     };
 
-    nav.closePopup = function closePopup() {
+    nav.closePopup = function () {
         $F.nav.setLocation('#/' + firstLastHash);
         if (navPopup !== null) {
             navPopup.close();
@@ -341,7 +376,7 @@
         }
     };
 
-    nav.getDebugScript = function getDebugScript(url, callback) {
+    nav.getDebugScript = function (url, callback) {
         var script = $('<script></script>').attr('src', url);
         $('head').append(script);
         callback();
@@ -349,7 +384,7 @@
         return null;
     };
 
-    nav.splitParameter = function splitParameter(url, defaultArguments) {
+    nav.splitParameter = function (url, defaultArguments) {
         defaultArguments = defaultArguments || {};
 
         // Wipe out all the second hashes since they are not the part of parameter
@@ -379,7 +414,7 @@
         };
 
         if (q !== "") {
-            if (paramType == 1) { // 0 no param, 1 for dot based, 2 for question mark based
+            if (paramType === 1) { // 0 no param, 1 for dot based, 2 for question mark based
                 arg.param = q.split('/');
             } else {
                 arg.param = q.split('&');
@@ -425,11 +460,11 @@
     /******** Formalhaut Engine Hook *********/
 
     // new way to load view script
-    $F.loadView = function loadView(obj) {
+    $F.loadView = function (obj) {
         nav.subView = obj;
     };
 
-    $F.nav.fixHashModifier = function fixHashModifier(selector) {
+    $F.nav.fixHashModifier = function (selector) {
         selector = selector || null;
 
         $('a[data-orig-href^="##"]', selector).each(function (i, el) {
@@ -484,7 +519,7 @@
                 var h = hash;
 
                 // get second hash
-                if (h.search(/#/) != -1) {
+                if (h.search(/#/) !== -1) {
                     h2 = hash.substr(h.search(/#/) + 1);
                     h = hash.substr(0, h.search(/#/));
                 }
@@ -495,7 +530,7 @@
                 var proc = nav.splitParameter(h);
 
                 // just the query is changed OR when force trigger flag is set
-                if ((firstLastHashNoParam == proc.hash && lastParam != proc.query) || triggerScope === $F.nav.TRIGGER_SCOPE_PARAM) {
+                if ((firstLastHashNoParam === proc.hash && lastParam !== proc.query) || triggerScope === $F.nav.TRIGGER_SCOPE_PARAM) {
                     var current = nav.currentSubView;
 
                     // Rewrite the proc variable
@@ -505,7 +540,7 @@
                         if (current.afterParamLoad) {
                             current.afterParamLoad(proc.arg);
                         }
-                        if(typeof current.parent == 'undefined') {
+                        if(typeof current.parent === 'undefined') {
                             break;
                         }
                         current = current.parent;
@@ -520,10 +555,10 @@
 
                 // check if second hash changed
                 var firstPopup = null;
-                if (secondLastHash != h2) {
+                if (secondLastHash !== h2) {
                     if (!isFirstLoad) {
                         // show the popup
-                        if (h2 != '') {
+                        if (h2 !== '') {
                             nav.openPopup(firstLastHash, h2);
                         } else {
                             nav.closePopup();
@@ -541,7 +576,7 @@
                 var pathArray = proc.hash.split(/\//g);
 
                 // if we go to the ancestor path, invalidate last path data and stack
-                if(firstLastHash.indexOf(proc.hash) == 0) {
+                if(firstLastHash.indexOf(proc.hash) === 0) {
                     executionStack = [];
                 }
 
