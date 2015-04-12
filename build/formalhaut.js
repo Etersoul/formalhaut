@@ -581,6 +581,10 @@ var BM = {};
             // Split the URL into parameter and other things, then trigger the afterLoad event
             var par = nav.splitParameter($F.nav.getCurrentHash().substr(2), defaultArg);
 
+            view.getElement = function () {
+                return $html;
+            };
+
             if (globalBeforeLoad) {
                 globalBeforeLoad(view, $html);
             }
@@ -653,6 +657,9 @@ var BM = {};
                     // Create view accessor
                     popup.closePopup = nav.closePopup;
                     popup.parent = nav.currentSubView;
+                    popup.getElement = function () {
+                        return popupHtml;
+                    };
 
                     // Apply new default parameter
                     split = nav.splitParameter(secondHash, popup.defaultArguments);
