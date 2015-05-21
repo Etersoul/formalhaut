@@ -12,6 +12,7 @@ var $F = ($F) ? $F : null;
     var curAnimation = 0;
     var curProcessedRequest = 0;
     var showLoadBar = false;
+    var afterSuccessServiceHook = [];
 
     checkF();
 
@@ -35,6 +36,10 @@ var $F = ($F) ? $F : null;
         var build = function () {
 
         };
+
+        build.addAfterSuccessServiceHook = function (fn) {
+            afterSuccessServiceHook.push(fn);
+        }
 
         // Move global window to $F.window. In short, no DOM accessing global variable allowed.
         build.window = window;
@@ -93,7 +98,9 @@ var $F = ($F) ? $F : null;
                         popup.close();
                     }
 
-                    $F.nav.prepareHashModifier();
+                    for (var i = 0; i < afterSuccessServiceHook.length; i++) {
+                        afterSuccessServiceHook[i]();
+                    }
                 },
                 error: function (data) {
                     if (data.status === 401) {
