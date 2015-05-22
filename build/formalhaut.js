@@ -502,6 +502,9 @@ var BM = {};
     var scriptStack = [];
     var hashChangeHooks = [];
     var navPopup = null;
+    var superCache = {};
+    var superData = null;
+
     /** Instance member **/
     var nav = {};
 
@@ -588,6 +591,16 @@ var BM = {};
             var localDebug = getDebug($F.config.get('viewUri') + opt.hash + '.js', function () {
                 // TODO: remove compatibility layer
                 var view = $F.compat.subViewInit(nav.subView);
+
+                if (view.superClass) {
+                    if (!superCache[view.superClass]) {
+                        getDebug($F.config.get('superClassUri') + view.superName + '.js', function () {
+                            superCache[view.superClass] = superData;
+                        });
+                    }
+
+                    
+                }
 
                 if(typeof view.isPopup !== 'undefined' && view.isPopup) {
                     console.warn('Accessing popup as a non-popup view.');
@@ -819,6 +832,10 @@ var BM = {};
     $F.loadView = function (obj) {
         nav.subView = obj;
     };
+
+    $F.loadSuper = function (obj) {
+        superData = obj;
+    }
 
     function _fixHashModifier(selector) {
         selector = selector || null;
