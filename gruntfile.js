@@ -7,6 +7,7 @@ module.exports = function (grunt) {
         concat: {
             basic: {
                 src: ['src/core.js',
+                    'src/hook.js',
                     'src/config.js',
                     'src/compat.js',
                     'src/navigation.js',
