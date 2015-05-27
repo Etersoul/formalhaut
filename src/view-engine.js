@@ -114,7 +114,6 @@
                         });
                     }
 
-                    
                 }
 
                 if(typeof view.isPopup !== 'undefined' && view.isPopup) {

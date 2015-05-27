@@ -8,7 +8,7 @@
 
     /** Private member **/
     var hashChangeHooks = [];
-    
+
     /** Public Function **/
     $F.nav = {};
 
@@ -99,7 +99,7 @@
             };
         }
 
-        return $F.nav.getLastHash();
+        return $F.nav.getCurrentHash();
     };
 
     // Set the location (hash) to the specific path

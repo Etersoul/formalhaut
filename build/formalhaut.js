@@ -327,7 +327,7 @@ var BM = {};
 
     /** Private member **/
     var hashChangeHooks = [];
-    
+
     /** Public Function **/
     $F.nav = {};
 
@@ -418,7 +418,7 @@ var BM = {};
             };
         }
 
-        return $F.nav.getLastHash();
+        return $F.nav.getCurrentHash();
     };
 
     // Set the location (hash) to the specific path
@@ -599,7 +599,6 @@ var BM = {};
                         });
                     }
 
-                    
                 }
 
                 if(typeof view.isPopup !== 'undefined' && view.isPopup) {
@@ -1288,14 +1287,12 @@ var BM = {};
 
     var defaultPerPage = 20;
     var defaultDataSelector = '.datatable';
-    var before = 'Page: ';
-    var defaultNextPrevCount = 3;
-    var randomClassAppender = (function() {
+    var randomClassAppender = (function () {
         var length = 4;
         var rand = 'abcdefghijklmnopqrstuvwxyz';
         var className = '';
 
-        for(var i = 0; i < length; i++) {
+        for (var i = 0; i < length; i++) {
             var c = Math.random();
             var r = rand[Math.floor(c * rand.length)];
             className += r;
@@ -1304,13 +1301,39 @@ var BM = {};
         return className;
     })();
 
+    var config;
+
+    // Set config global option
+    $F.config.hook(function () {
+        config = $F.config.get('pagination');
+        config = $.extend({
+            pageButtonClass: 'page-button',
+            previousClass: 'prev',
+            nextClass: 'next',
+            previousText: '<',
+            nextText: '>',
+            lastClass: 'last',
+            firstClass: 'first',
+            lastText: '{{last}}',
+            firstText: '1',
+            nextPrevButtonPosition: 'left-right', // option: left-right, left, right
+            firstLastButtonStyle: 'text', // option: none, text
+            wrapClass: 'pagination',
+            pageNumberClass: 'page-display',
+            pageNumberText: 'Page {{current}} of {{last}}:',
+            pageListClass: 'page-number',
+            itemClass: 'item',
+            defaultNextPrevCount: 3
+        }, config);
+    });
+
     $F.pagination = function (option) {
         option = option || {};
-        option.before = option.before || before;
+        option.before = option.before || config.pageNumberText;
         option.dataCount = parseInt(option.dataCount || 1);
         option.perPage = parseInt(option.perPage || defaultPerPage);
         option.url = option.url || null;
-        option.nextPrevCount = parseInt(option.nextPrevCount || defaultNextPrevCount);
+        option.nextPrevCount = parseInt(option.nextPrevCount || config.defaultNextPrevCount);
         option.currentPage = parseInt(option.currentPage || 1);
 
         var element;
@@ -1322,7 +1345,7 @@ var BM = {};
                 element.empty();
             } else {
                 // Attempt to auto generate pagination after a table
-                element = $('<div class="pagination"></div>').addClass('page-' + randomClassAppender);
+                element = $('<div></div>').addClass(config.wrapClass).addClass('page-' + randomClassAppender);
 
                 var defaultRel = $F.config.get('defaultRel');
 
@@ -1335,7 +1358,7 @@ var BM = {};
                     tab = tab.eq(0);
                 }
 
-                if(tab.length === 0) {
+                if (tab.length === 0) {
                     var alertMsg = [];
                     alertMsg.push('Not found any table for pagination.');
                     alertMsg.push('Ensure you have at least one table or a table with "datatable" class name.');
@@ -1359,7 +1382,7 @@ var BM = {};
                 option.url = "#.{page}";
             } else {
                 var pop = split[split.length - 1];
-                if(isNaN(pop)) {
+                if (isNaN(pop)) {
                     split.push('{page}');
                 } else {
                     split.pop();
@@ -1373,33 +1396,76 @@ var BM = {};
         var lastPage = Math.ceil(option.dataCount / option.perPage);
 
         element.html('');
-        element.append($('<span class="pagination">' + option.before + '</span>'));
-        element.append($('<a></a>').text('<<').attr('href', replacePage(option.url, 1)));
 
-        if (option.currentPage > 1) {
-            element.append($('<a class="pageprev"></a>').text('<').attr('href', replacePage(option.url, option.currentPage - 1)));
-        }
+        // Processing the page number class
+        var pageNumber = option.before
+                .replace(/\{\{current\}\}/, option.currentPage)
+                .replace(/\{\{last\}\}/, lastPage);
+
+        element.append($('<span></span>').addClass(config.pageNumberClass).text(pageNumber));
+
+        var pageList = $('<span></span>').addClass(config.pageListClass);
 
         for (var i = option.currentPage - option.nextPrevCount; i <= option.currentPage + option.nextPrevCount; i++) {
             if (i < 1 || i > lastPage) {
                 continue;
             }
-            
-            element.append($('<a></a>').text(i).attr('href', replacePage(option.url, i)));
+
+            var item = $('<a></a>').addClass(config.itemClass).text(i).attr('href', replacePage(option.url, i));
+
+            if (i == option.currentPage) {
+                item.addClass('current');
+            }
+
+            pageList.append(item);
         }
 
-        if (option.currentPage < lastPage) {
-            element.append($('<a class="pagenext"></a>').text('>').attr('href', replacePage(option.url, option.currentPage + 1)));
+        if (config.firstLastButtonStyle === 'text') {
+            if (option.currentPage >= 2 + option.nextPrevCount) {
+                pageList.prepend($('<a></a>').addClass(config.itemClass).text('...').attr('href', '#'));
+                pageList.prepend($('<a></a>').addClass(config.itemClass).text(config.firstText).attr('href', replacePage(option.url, 1)));
+            }
+
+            if (option.currentPage <= lastPage - (option.nextPrevCount + 1)) {
+                pageList.append($('<a></a>').addClass(config.itemClass).text('...').attr('href', '#'));
+                pageList.append($('<a></a>').addClass(config.itemClass).text(config.lastText.replace(/\{\{last\}\}/, lastPage)).attr('href', replacePage(option.url, lastPage)));
+            }
         }
 
-        element.append($('<a></a>').text('>>').attr('href', replacePage(option.url, lastPage)));
-        $F.nav.prepareHashModifier(element);
+        var pageButton = $('<span></span>').addClass(config.pageButtonClass);
+        var prevButton = $('<a></a>').addClass(config.previousClass).text(config.previousText).attr('href', replacePage(option.url, option.currentPage - 1));
+        var nextButton = $('<a></a>').addClass(config.nextClass).text(config.nextText).attr('href', replacePage(option.url, option.currentPage + 1));
+        switch (config.nextPrevButtonPosition) {
+            case 'left-right':
+                var pageButton2 = pageButton.clone();
+
+                pageButton.append(prevButton);
+                pageList.prepend(pageButton);
+
+                pageButton2.append(nextButton);
+                pageList.append(pageButton2);
+                break;
+
+            case 'left':
+                pageButton.append(prevButton);
+                pageButton.append(nextButton);
+                pageList.prepend(pageButton);
+                break;
+
+            case 'right':
+                pageButton.append(prevButton);
+                pageButton.append(nextButton);
+                pageList.append(pageButton);
+                break;
+        }
+
+        element.append(pageList);
     };
-    
+
     $F.pagination.getClass = function () {
         return randomClassAppender;
     };
-    
+
     $F.pagination.getElement = function () {
         return $('.page-' + randomClassAppender);
     };
