@@ -327,7 +327,7 @@ var BM = {};
 
     /** Private member **/
     var hashChangeHooks = [];
-    
+
     /** Public Function **/
     $F.nav = {};
 
@@ -431,7 +431,7 @@ var BM = {};
 
         var hash = window.location.hash.substr(1);
         var last = $F.nav.splitParameter(hash);
-        location.href = $F.util.buildUrl('#/' + last, param);
+        location.href = $F.util.buildUrl('#' + last.hash, param);
 
         if (forceTrigger) {
             $(window).trigger('hashchange', $F.nav.TRIGGER_SCOPE_PARAM);
@@ -1696,7 +1696,7 @@ var BM = {};
                 } else if (/\[.*?\]/.test(n.name)) {
                     json[cleanName] = {};
 
-                    iterateObject(json[cleanName], n.name, n.value)
+                    iterateObject(json[cleanName], n.name, n.value);
                 } else {
                     json[cleanName] = n.value;
                 }

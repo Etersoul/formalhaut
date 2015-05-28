@@ -8,7 +8,7 @@
 
     /** Private member **/
     var hashChangeHooks = [];
-    
+
     /** Public Function **/
     $F.nav = {};
 
@@ -112,7 +112,7 @@
 
         var hash = window.location.hash.substr(1);
         var last = $F.nav.splitParameter(hash);
-        location.href = $F.util.buildUrl('#/' + last, param);
+        location.href = $F.util.buildUrl('#' + last.hash, param);
 
         if (forceTrigger) {
             $(window).trigger('hashchange', $F.nav.TRIGGER_SCOPE_PARAM);

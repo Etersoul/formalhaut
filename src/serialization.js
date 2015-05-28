@@ -15,7 +15,7 @@
                 } else if (/\[.*?\]/.test(n.name)) {
                     json[cleanName] = {};
 
-                    iterateObject(json[cleanName], n.name, n.value)
+                    iterateObject(json[cleanName], n.name, n.value);
                 } else {
                     json[cleanName] = n.value;
                 }
