@@ -114,7 +114,6 @@
                         });
                     }
 
-                    
                 }
 
                 if(typeof view.isPopup !== 'undefined' && view.isPopup) {
@@ -220,15 +219,9 @@
                 return $html;
             };
 
-            if (nav.globalBeforeLoad) {
-                nav.globalBeforeLoad(view, $html);
-            }
-
+            $F.hook.runHook('beforeViewLoad', view);
             view.afterLoad(par.arg);
-
-            if (nav.globalAfterLoad) {
-                nav.globalAfterLoad(view, $html);
-            }
+            $F.hook.runHook('afterViewLoad', view);
 
             document.title = view.title;
 
