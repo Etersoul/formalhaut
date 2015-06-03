@@ -25,6 +25,11 @@
     $F.nav.splitParameter = function (url, defaultArguments) {
         defaultArguments = defaultArguments || {};
 
+        // Wipe out the first position hash, in case if the url is submitted with it
+        if (url.charAt(0) ==='#') {
+            url = url.substr(1);
+        }
+
         // Wipe out all the second hashes since they are not the part of parameter
         url = url.split('#')[0];
 
@@ -100,6 +105,11 @@
         }
 
         return $F.nav.getCurrentHash();
+    };
+
+    // Get second section of last hash (argument)
+    $F.nav.getLastParam = function () {
+        return $F.nav.splitParameter($F.nav.getCurrentHash()).arg.fullParam;
     };
 
     // Set the location (hash) to the specific path
