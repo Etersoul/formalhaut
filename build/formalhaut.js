@@ -67,6 +67,11 @@ var $F = ($F) ? $F : null;
                 opt.progress();
             }
 
+            // The data will be using object, or JSON, so we need to stringify it if it is not
+            if (typeof opt.data === 'object') {
+                opt.data = JSON.stringify(opt.data);
+            }
+
             return $.ajax({
                 url: opt.url,
                 data: opt.data || {},
@@ -102,11 +107,16 @@ var $F = ($F) ? $F : null;
                         afterSuccessServiceHook[i]();
                     }
                 },
-                error: function (data) {
-                    if (data.status === 401) {
+                error: function (xhr, text, err) {
+                    if (xhr.status === 401) {
                         location.href = $F.config.get('loginUri');
                     }
-                    $F.logError('Ajax error');
+
+                    console.error('Service error (for POST data, see below): ' + err + "\n" + xhr.responseText);
+                    if (this.type.toLowerCase() === 'post') {
+                        // Must be reparsed from opt.data
+                        console.info(JSON.parse(this.data));
+                    }
 
                     var errorPopup = $F.popup.create({
                         content: '<p style="font-size: 14px">There is an error somewhere in the service. Please inform the developer.</p>'
