@@ -929,7 +929,7 @@ var BM = {};
 
             // Proceed argument hash shorthand
             if (window.location.hash.substr(0, 2) === '#.') {
-                window.history.replaceState(null, "", '#/' + firstLastHash + '.' + window.location.hash.substr(2));
+                window.history.replaceState(null, "", '#/' + firstLastHashNoParam + '.' + window.location.hash.substr(2));
             }
 
             // Proceed primary hash
