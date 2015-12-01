@@ -21,7 +21,7 @@
             delimiter = '&';
         }
 
-        return (queryString !== '') ? (base + '?' + queryString) : '';
+        return (queryString !== '') ? (base + '?' + queryString) : base;
     };
 
     $F.util.fillForm = function (selector, obj) {
