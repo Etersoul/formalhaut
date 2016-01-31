@@ -391,6 +391,15 @@ var BM = {};
         return location.hash;
     };
 
+    $F.nav.getCurrentCleanHash = function () {
+        var loc = location.hash;
+
+        var split1 = loc.split('.'); // strip out the dot
+        var split2 = split1[0].split('?'); // strip out the question mark
+
+        return split2[0];
+    };
+
     // Split the URL into object
     $F.nav.splitParameter = function (url, defaultArguments) {
         defaultArguments = defaultArguments || {};
@@ -701,14 +710,19 @@ var BM = {};
 
             if (localDebug !== null && typeof localDebug.error === 'function') {
                 localDebug.fail(function (e, x, ex) {
-                    console.log(ex);
+                    var reportLink = $F.config.get('reportProblemLink') || ''
+                    var report = ''
+                    if (reportLink !== '') {
+                        report = '<a href="#/' + reportLink + '?problem=404" class="button">Report Problem</a>';
+                    }
+                    
                     if (e.status === 404) {
                         $F.popup.show({
                             content: '<h2 style="font-size:20px;margin: 0 0 20px 0;text-align:center">404 Error: File not found</h2>' +
                                 '<p style="width: 700px;margin:20px 0;line-height:18px;">You might be get here by entering wrong address in the address bar, clicking a link within application, or doing something that might trigger error. Please inform the developer if this problem persists and occured repeatedly.</p>' +
                                 '<div style="text-align:center;">' +
                                 '<a href="javascript:history.go(-1);$F.popup.close();" class="button">Return</a>' +
-                                '<a href="#/bug-report?problem=404" class="button">Report Problem</a>' +
+                                report +
                                 '<a href="." class="button">Return to dashboard.</a>' +
                                 '</div>'
                         });
@@ -1446,6 +1460,32 @@ var BM = {};
 
                 option.url = '#.' + split.join('/');
             }
+        }
+
+        if (option.namedParam) {
+            var split = $F.nav.getCurrentHash().split(/\?/);
+            var exists = false;
+            var querySplit = [];
+            if (split.length == 2) {
+
+                querySplit = split[1].split(/&/);
+                for (var i = 0; i < querySplit.length; i++) {
+                    var query = querySplit[i].split(/=/);
+
+                    if (query[0] == option.namedParam) {
+                        querySplit[i] = option.namedParam + '={page}';
+                        exists = true;
+                    }
+                }
+            }
+
+            if (!exists){
+                querySplit.push(option.namedParam + '={page}');
+            }
+
+            var join = querySplit.join('&');
+
+            option.url = split[0] + '?' + join;
         }
 
         var lastPage = Math.ceil(option.dataCount / option.perPage);

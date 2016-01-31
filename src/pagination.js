@@ -110,6 +110,32 @@
             }
         }
 
+        if (option.namedParam) {
+            var split = $F.nav.getCurrentHash().split(/\?/);
+            var exists = false;
+            var querySplit = [];
+            if (split.length == 2) {
+
+                querySplit = split[1].split(/&/);
+                for (var i = 0; i < querySplit.length; i++) {
+                    var query = querySplit[i].split(/=/);
+
+                    if (query[0] == option.namedParam) {
+                        querySplit[i] = option.namedParam + '={page}';
+                        exists = true;
+                    }
+                }
+            }
+
+            if (!exists){
+                querySplit.push(option.namedParam + '={page}');
+            }
+
+            var join = querySplit.join('&');
+
+            option.url = split[0] + '?' + join;
+        }
+
         var lastPage = Math.ceil(option.dataCount / option.perPage);
 
         element.html('');

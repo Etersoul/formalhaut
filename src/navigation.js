@@ -21,6 +21,15 @@
         return location.hash;
     };
 
+    $F.nav.getCurrentCleanHash = function () {
+        var loc = location.hash;
+
+        var split1 = loc.split('.'); // strip out the dot
+        var split2 = split1[0].split('?'); // strip out the question mark
+
+        return split2[0];
+    };
+
     // Split the URL into object
     $F.nav.splitParameter = function (url, defaultArguments) {
         defaultArguments = defaultArguments || {};

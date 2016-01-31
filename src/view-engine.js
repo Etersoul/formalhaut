@@ -155,14 +155,19 @@
 
             if (localDebug !== null && typeof localDebug.error === 'function') {
                 localDebug.fail(function (e, x, ex) {
-                    console.log(ex);
+                    var reportLink = $F.config.get('reportProblemLink') || ''
+                    var report = ''
+                    if (reportLink !== '') {
+                        report = '<a href="#/' + reportLink + '?problem=404" class="button">Report Problem</a>';
+                    }
+                    
                     if (e.status === 404) {
                         $F.popup.show({
                             content: '<h2 style="font-size:20px;margin: 0 0 20px 0;text-align:center">404 Error: File not found</h2>' +
                                 '<p style="width: 700px;margin:20px 0;line-height:18px;">You might be get here by entering wrong address in the address bar, clicking a link within application, or doing something that might trigger error. Please inform the developer if this problem persists and occured repeatedly.</p>' +
                                 '<div style="text-align:center;">' +
                                 '<a href="javascript:history.go(-1);$F.popup.close();" class="button">Return</a>' +
-                                '<a href="#/bug-report?problem=404" class="button">Report Problem</a>' +
+                                report +
                                 '<a href="." class="button">Return to dashboard.</a>' +
                                 '</div>'
                         });
