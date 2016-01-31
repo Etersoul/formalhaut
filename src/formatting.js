@@ -168,9 +168,9 @@
         var time = t[1];
         if(formatTimeCallback != '') {
             var callTime = formatTimeCallback;
-            time = $F.format[callTime](time);
+            date += ' ' +  $F.format[callTime](time);
         }
 
-        return date + ' ' + time;
+        return date;
     };
 })(jQuery, $F);
