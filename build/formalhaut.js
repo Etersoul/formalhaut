@@ -1696,8 +1696,12 @@ var BM = {};
                 closeButton.addclass(config.closeButtonClass);
             }
 
-            if (config.innerWrapClass && innerWrapClass) {
+            if (config.innerWrapClass && innerWrap) {
                 innerWrap.addClass(config.innerWrapClass);
+            }
+
+            if (config.secondInnerWrapClass) {
+                ndInnerWrap.addClass(config.secondInnerWrapClass);
             }
         }
 
@@ -1809,33 +1813,35 @@ var BM = {};
             height: h + 'px'
         });
 
-        var divBorder = $('.popup-border', wrap);
-        var divNdInnerWrap = $('.popup-second-inner-wrap', wrap);
+        if (!config || config.useIntegratedResizer == true) {
+            var divBorder = $('.popup-border', wrap);
+            var divNdInnerWrap = $('.popup-second-inner-wrap', wrap);
 
-        divBorder.css({
-            width : objOption.width
-        });
-
-        divNdInnerWrap.css({
-            height: (divBorder.height() + 30) + 'px'
-        })
-
-        if (param.width != null) {
-            divBorder.css('width', param.width);
-        }
-
-        var wd = divBorder.width();
-        var wh = divBorder.height();
-
-        divBorder.css({
-            left: (w / 2 - wd / 2 - 15) + 'px',
-            height: 'auto'
-        });
-
-        if (wh < w) {
             divBorder.css({
-                top: '30px'
+                width : objOption.width
             });
+
+            divNdInnerWrap.css({
+                height: (divBorder.height() + 30) + 'px'
+            })
+
+            if (param.width != null) {
+                divBorder.css('width', param.width);
+            }
+
+            var wd = divBorder.width();
+            var wh = divBorder.height();
+
+            divBorder.css({
+                left: (w / 2 - wd / 2 - 15) + 'px',
+                height: 'auto'
+            });
+
+            if (wh < w) {
+                divBorder.css({
+                    top: '30px'
+                });
+            }
         }
     }
 })(jQuery, $F);
